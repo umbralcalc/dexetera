@@ -17,6 +17,7 @@ func runConfig(binaryPath string, configPath string) {
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal("config run err:", err)
+                fmt.Println(out)
 	}
 }
 
