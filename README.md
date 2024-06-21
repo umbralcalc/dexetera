@@ -2,16 +2,17 @@
 
 A home for simulation archetypes and AI agent training environments.
 
-## Initial setup
+## Build the example sim
 
-You'll need to have the [stochadex binary](https://github.com/umbralcalc/stochadex) built and somewhere on your system. Once this has been done, you'll be able to run any tests if you set your local environment variable like so:
+In order to build the example sim with WebAssembly, you run:
 
 ```shell
-export STOCHADEX_PATH=/path/to/repo/stochadex
+GOOS=js GOARCH=wasm go build -o ./app/example_sim.wasm ./cmd/example_sim/main.go 
 ```
 
-You can also run any of the configs here like this:
+## Run the example sim
 
 ```shell
-${STOCHADEX_PATH}/bin/stochadex --config ./any_config_here.yaml
+# view the app running at http://localhost:8000
+cd app/ && python3 -m http.server 8000
 ```
