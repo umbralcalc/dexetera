@@ -1,24 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Wasm Loop</title>
+    <title>Wasm App</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="container">
+        <h1>Wasm App</h1>
+        <p>Click the button below to download assets and run the application locally.</p>
+        <button id="downloadButton">Download and Run</button>
+    </div>
     <script src="wasm_exec.js"></script>
-    <script>
-        const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("example_sim.wasm"), go.importObject).then(result => {
-            go.run(result.instance);
-            
-            // JavaScript callback function
-            function handleData(data) {
-                console.log("Data from Go:", data);
-                // Process the data as needed
-            }
-            
-            // Call the exported Go function
-            loop(handleData);
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
