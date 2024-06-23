@@ -2,6 +2,10 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/worker.js')
         .then(registration => {
             console.log('Service Worker registered with scope:', registration.scope);
+            return navigator.serviceWorker.ready;
+        })
+        .then(registration => {
+            console.log('Service Worker is ready and controlling the page');
         })
         .catch(error => {
             console.error('Service Worker registration failed:', error);
@@ -26,7 +30,12 @@ function downloadAssets() {
     if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage('cache-assets');
     } else {
-        console.error('No active Service Worker controller found');
+        console.error('No active Service Worker controller found, retrying...');
+        navigator.serviceWorker.ready.then(() => {
+            navigator.serviceWorker.controller.postMessage('cache-assets');
+        }).catch(err => {
+            console.error('Failed to find an active Service Worker controller', err);
+        });
     }
 }
 
