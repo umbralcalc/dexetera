@@ -1,8 +1,6 @@
 package io
 
 import (
-	sync "sync"
-
 	"github.com/gorilla/websocket"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"google.golang.org/protobuf/proto"
@@ -12,7 +10,6 @@ import (
 // based on I/O with a WebSocket connection.
 type WebsocketInputIteration struct {
 	conn           *websocket.Conn
-	mutex          *sync.Mutex
 	sendPartitions []int64
 }
 
@@ -31,9 +28,8 @@ func (w *WebsocketInputIteration) Iterate(
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
 	// Send the configured states to the client
-	w.mutex.Lock()
 	for _, index := range w.sendPartitions {
-		sendData, err := proto.Marshal(
+		sendBytes, err := proto.Marshal(
 			&PartitionState{
 				CumulativeTimesteps: timestepsHistory.Values.AtVec(0),
 				PartitionIndex:      int64(index),
@@ -43,23 +39,22 @@ func (w *WebsocketInputIteration) Iterate(
 		if err != nil {
 			panic(err)
 		}
-		err = w.conn.WriteMessage(0, sendData)
+		err = w.conn.WriteMessage(0, sendBytes)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	// Read message from WebSocket connection
-	_, readData, err := w.conn.ReadMessage()
+	// Read data from WebSocket connection
+	_, readBytes, err := w.conn.ReadMessage()
 	if err != nil {
 		panic(err)
 	}
 	var data PartitionState
-	err = proto.Unmarshal(readData, &data)
+	err = proto.Unmarshal(readBytes, &data)
 	if err != nil {
 		panic(err)
 	}
-	w.mutex.Unlock()
 
 	return data.State
 }
@@ -67,7 +62,6 @@ func (w *WebsocketInputIteration) Iterate(
 // NewWebsocketInputIteration creates a new WebsocketInputIteration
 func NewWebsocketInputIteration(
 	conn *websocket.Conn,
-	mutex *sync.Mutex,
 ) *WebsocketInputIteration {
-	return &WebsocketInputIteration{conn: conn, mutex: mutex}
+	return &WebsocketInputIteration{conn: conn}
 }
