@@ -8,12 +8,12 @@ import (
 
 // WebsocketIOIteration implements an iteration in the stochadex
 // based on I/O with a WebSocket connection.
-type WebsocketInputIteration struct {
+type WebsocketIOIteration struct {
 	conn           *websocket.Conn
 	sendPartitions []int64
 }
 
-func (w *WebsocketInputIteration) Configure(
+func (w *WebsocketIOIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
@@ -21,7 +21,7 @@ func (w *WebsocketInputIteration) Configure(
 		settings.OtherParams[partitionIndex].IntParams["send_partitions"]
 }
 
-func (w *WebsocketInputIteration) Iterate(
+func (w *WebsocketIOIteration) Iterate(
 	params *simulator.OtherParams,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
@@ -32,7 +32,7 @@ func (w *WebsocketInputIteration) Iterate(
 		sendBytes, err := proto.Marshal(
 			&PartitionState{
 				CumulativeTimesteps: timestepsHistory.Values.AtVec(0),
-				PartitionIndex:      int64(index),
+				PartitionIndex:      index,
 				State:               stateHistories[index].Values.RawRowView(0),
 			},
 		)
@@ -59,9 +59,9 @@ func (w *WebsocketInputIteration) Iterate(
 	return data.State
 }
 
-// NewWebsocketInputIteration creates a new WebsocketInputIteration
-func NewWebsocketInputIteration(
+// NewWebsocketIOIteration creates a new WebsocketIOIteration
+func NewWebsocketIOIteration(
 	conn *websocket.Conn,
-) *WebsocketInputIteration {
-	return &WebsocketInputIteration{conn: conn}
+) *WebsocketIOIteration {
+	return &WebsocketIOIteration{conn: conn}
 }
