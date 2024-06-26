@@ -2,8 +2,22 @@
 
 package main
 
-import "github.com/umbralcalc/dexetera/pkg/wasm"
+import (
+	"github.com/umbralcalc/dexetera/pkg/simio"
+	"github.com/umbralcalc/stochadex/pkg/simulator"
+)
 
 func main() {
-	wasm.RunLoop()
+	settings := &simulator.Settings{}
+	implementations := &simulator.Implementations{}
+	websocketPartitionIndex := 0
+	handle := ""
+	address := ""
+	simio.RegisterRun(
+		settings,
+		implementations,
+		websocketPartitionIndex,
+		handle,
+		address,
+	)
 }

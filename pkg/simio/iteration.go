@@ -1,4 +1,4 @@
-package io
+package simio
 
 import (
 	"github.com/gorilla/websocket"

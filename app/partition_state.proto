@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "./pkg/io";
+option go_package = "./pkg/simio";
 
 message PartitionState {
   double cumulative_timesteps = 1;

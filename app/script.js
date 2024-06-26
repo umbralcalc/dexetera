@@ -52,7 +52,7 @@ function runWasm() {
         }
 
         // Call the exported Go function
-        loop(handleData);
+        run(handleData);
     }).catch(err => {
         console.error("Error loading WebAssembly:", err);
     });
