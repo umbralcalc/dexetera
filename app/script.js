@@ -46,13 +46,16 @@ function runWasm() {
         go.run(result.instance);
 
         // JavaScript callback function
-        function handleData(data) {
-            console.log("Data from Go:", data);
-            // Process the data as needed
+        function handlePartitionState(data) {
+            const message = PartitionState.decode(new Uint8Array(data));
+            console.log("---------------------------------------------------");
+            console.log("Cumulative Timesteps:", message.cumulativeTimesteps);
+            console.log("Partition Index:", message.partitionIndex);
+            console.log("State:", message.state);
         }
 
         // Call the exported Go function
-        run(handleData);
+        run(handlePartitionState);
     }).catch(err => {
         console.error("Error loading WebAssembly:", err);
     });
