@@ -1,4 +1,5 @@
 protoc -I=. \
-    --go_out=$(pwd) \
-    --js_out=./app \
-    ./app/partition_state.proto
+    --go_out=./.. \
+    --js_out=. \
+    --python_out=./python \
+    partition_state.proto

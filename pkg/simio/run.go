@@ -111,6 +111,6 @@ func RegisterRun(
 		handle,
 		address,
 	)
-	js.Global().Set("run", js.FuncOf(run))
+	js.Global().Set("runSimulation", js.FuncOf(run))
 	select {}
 }

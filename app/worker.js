@@ -1,4 +1,4 @@
-const CACHE_NAME = 'my-app-cache-v1';
+const CACHE_NAME = 'dex-worker-cache-v1';
 const ASSETS_TO_CACHE = [
     'index.html',
     'example_sim.wasm',

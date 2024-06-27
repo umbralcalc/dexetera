@@ -1,4 +1,4 @@
-// source: app/partition_state.proto
+// source: partition_state.proto
 /**
  * @fileoverview
  * @enhanceable

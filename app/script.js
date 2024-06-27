@@ -55,7 +55,7 @@ function runWasm() {
         }
 
         // Call the exported Go function
-        run(handlePartitionState);
+        runSimulation(handlePartitionState);
     }).catch(err => {
         console.error("Error loading WebAssembly:", err);
     });
