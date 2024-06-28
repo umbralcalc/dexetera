@@ -51,7 +51,7 @@ function runWasm() {
             console.log("---------------------------------------------------");
             console.log("Cumulative Timesteps:", message.cumulativeTimesteps);
             console.log("Partition Index:", message.partitionIndex);
-            console.log("State:", message.state);
+            console.log("State:", message.state.values);
         }
 
         // Call the exported Go function

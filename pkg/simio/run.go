@@ -62,7 +62,7 @@ func (j *JsCallbackOutputFunction) Output(
 		&PartitionState{
 			CumulativeTimesteps: cumulativeTimesteps,
 			PartitionIndex:      int64(partitionIndex),
-			State:               state,
+			State:               &State{Values: state},
 		},
 	)
 	if err != nil {

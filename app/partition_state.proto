@@ -2,8 +2,12 @@ syntax = "proto3";
 
 option go_package = "./pkg/simio";
 
+message State {
+  repeated double values = 1;
+}
+
 message PartitionState {
   double cumulative_timesteps = 1;
   int64 partition_index = 2;
-  repeated double state = 3;
+  State state = 3;
 }

@@ -33,7 +33,9 @@ func (w *WebsocketIOIteration) Iterate(
 			&PartitionState{
 				CumulativeTimesteps: timestepsHistory.Values.AtVec(0),
 				PartitionIndex:      index,
-				State:               stateHistories[index].Values.RawRowView(0),
+				State: &State{
+					Values: stateHistories[index].Values.RawRowView(0),
+				},
 			},
 		)
 		if err != nil {
@@ -50,13 +52,13 @@ func (w *WebsocketIOIteration) Iterate(
 	if err != nil {
 		panic(err)
 	}
-	var data PartitionState
+	var data State
 	err = proto.Unmarshal(readBytes, &data)
 	if err != nil {
 		panic(err)
 	}
 
-	return data.State
+	return data.Values
 }
 
 // NewWebsocketIOIteration creates a new WebsocketIOIteration

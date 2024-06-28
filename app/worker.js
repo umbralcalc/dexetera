@@ -4,24 +4,32 @@ const ASSETS_TO_CACHE = [
     'example_sim.wasm',
     'wasm_exec.js',
     'styles.css',
-    'script.js'
+    'partitionstate.js',
+    'script.js',
+    'state.js'
 ];
 
 self.addEventListener('install', event => {
     console.log('Service Worker: Install event');
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Service Worker: Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            return caches.open(CACHE_NAME).then(cache => {
                 console.log('Opened cache');
                 return cache.addAll(ASSETS_TO_CACHE);
-            })
-            .then(() => {
-                console.log('All assets cached');
-                self.skipWaiting();
-            })
-            .catch(err => {
-                console.error('Failed to cache assets during install', err);
-            })
+            });
+        }).then(() => {
+            self.skipWaiting();
+            console.log('All assets cached');
+        })
     );
 });
 

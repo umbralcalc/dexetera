@@ -27,7 +27,40 @@ func (g *gammaJumpDistribution) NewJump(
 }
 
 func main() {
-	settings := simulator.LoadSettingsFromYaml("settings.yaml")
+	settings := &simulator.Settings{
+		OtherParams: []*simulator.OtherParams{
+			{
+				FloatParams: map[string][]float64{},
+				IntParams:   map[string][]int64{},
+			},
+			{
+				FloatParams: map[string][]float64{
+					"rates":        {0.5, 1.0, 0.8, 1.0, 1.1},
+					"gamma_alphas": {1.0, 2.5, 3.0, 1.8, 1.0},
+					"gamma_betas":  {2.0, 1.0, 4.1, 2.0, 1.2},
+				},
+				IntParams: map[string][]int64{},
+			},
+			{
+				FloatParams: map[string][]float64{
+					"rates":        {1.5, 0.2, 0.6},
+					"gamma_alphas": {2.3, 5.1, 2.0},
+					"gamma_betas":  {2.0, 1.5, 1.1},
+				},
+				IntParams: map[string][]int64{},
+			},
+		},
+		InitStateValues: [][]float64{
+			{1.0, 1.0, 1.0},
+			{0.0, 0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0},
+		},
+		InitTimeValue:         0.0,
+		Seeds:                 []uint64{0, 563, 8312},
+		StateWidths:           []int{3, 5, 3},
+		StateHistoryDepths:    []int{2, 2, 2},
+		TimestepsHistoryDepth: 2,
+	}
 	partitions := make([]simulator.Partition, 0)
 	partitions = append(
 		partitions,
