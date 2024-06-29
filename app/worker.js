@@ -1,9 +1,10 @@
 const CACHE_NAME = 'dex-worker-cache-v1';
 const ASSETS_TO_CACHE = [
     'index.html',
+    'styles.css',
     'example_sim.wasm',
     'wasm_exec.js',
-    'styles.css',
+    'google-protobuf.js',
     'partition_state_pb.js',
     'script.js',
     'state.js'

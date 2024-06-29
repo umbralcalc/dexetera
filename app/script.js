@@ -49,9 +49,9 @@ function runWasm() {
         function handlePartitionState(data) {
             const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
             console.log("---------------------------------------------------");
-            console.log("Cumulative Timesteps:", message.cumulativeTimesteps);
-            console.log("Partition Index:", message.partitionIndex);
-            console.log("State:", message.state.values);
+            console.log("Cumulative Timesteps:", message.getCumulativeTimesteps());
+            console.log("Partition Index:", message.getPartitionIndex());
+            console.log("State:", message.getState().getValuesList());
         }
 
         // Call the exported Go function
