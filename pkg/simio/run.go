@@ -3,11 +3,8 @@
 package simio
 
 import (
-	"log"
-	"net/http"
 	"syscall/js"
 
-	"github.com/gorilla/websocket"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,30 +18,36 @@ func RunAndServeWebsocket(
 	handle string,
 	address string,
 ) {
-	var upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
+	// var upgrader = websocket.Upgrader{
+	// 	CheckOrigin: func(r *http.Request) bool { return true },
+	// }
 
-	http.HandleFunc(
-		handle,
-		func(w http.ResponseWriter, r *http.Request) {
-			connection, err := upgrader.Upgrade(w, r, nil)
-			if err != nil {
-				log.Println("Error upgrading to WebSocket:", err)
-				return
-			}
-			defer connection.Close()
+	// http.HandleFunc(
+	// 	handle,
+	// 	func(w http.ResponseWriter, r *http.Request) {
+	// 		connection, err := upgrader.Upgrade(w, r, nil)
+	// 		if err != nil {
+	// 			log.Println("Error upgrading to WebSocket:", err)
+	// 			return
+	// 		}
+	// 		defer connection.Close()
 
-			implementations.Partitions[websocketPartitionIndex].Iteration =
-				NewWebsocketIOIteration(connection)
-			coordinator := simulator.NewPartitionCoordinator(
-				settings,
-				implementations,
-			)
-			coordinator.Run()
-		},
+	// 		iteration := NewWebsocketIOIteration(connection)
+	// 		iteration.Configure(websocketPartitionIndex, settings)
+	// 		implementations.Partitions[websocketPartitionIndex].Iteration = iteration
+	// 		coordinator := simulator.NewPartitionCoordinator(
+	// 			settings,
+	// 			implementations,
+	// 		)
+	// 		coordinator.Run()
+	// 	},
+	// )
+	// log.Fatal(http.ListenAndServe(address, nil))
+	coordinator := simulator.NewPartitionCoordinator(
+		settings,
+		implementations,
 	)
-	log.Fatal(http.ListenAndServe(address, nil))
+	coordinator.Run()
 }
 
 // JsCallbackOutputFunction sets the callback function which passes
@@ -68,7 +71,9 @@ func (j *JsCallbackOutputFunction) Output(
 	if err != nil {
 		panic(err)
 	}
-	j.callback.Invoke(sendBytes)
+	uint8Array := js.Global().Get("Uint8Array").New(len(sendBytes))
+	js.CopyBytesToJS(uint8Array, sendBytes)
+	j.callback.Invoke(uint8Array)
 }
 
 // GenerateRunClosure creates a function which runs the stochadex

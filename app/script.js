@@ -47,7 +47,7 @@ function runWasm() {
 
         // JavaScript callback function
         function handlePartitionState(data) {
-            const message = PartitionState.decode(new Uint8Array(data));
+            const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
             console.log("---------------------------------------------------");
             console.log("Cumulative Timesteps:", message.cumulativeTimesteps);
             console.log("Partition Index:", message.partitionIndex);

@@ -4,7 +4,7 @@ const ASSETS_TO_CACHE = [
     'example_sim.wasm',
     'wasm_exec.js',
     'styles.css',
-    'partitionstate.js',
+    'partition_state_pb.js',
     'script.js',
     'state.js'
 ];
@@ -15,10 +15,8 @@ self.addEventListener('install', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Service Worker: Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
+                    console.log('Service Worker: Deleting old cache:', cacheName);
+                    return caches.delete(cacheName);
                 })
             );
         }).then(() => {

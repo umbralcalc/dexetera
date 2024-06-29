@@ -31,7 +31,9 @@ func main() {
 		OtherParams: []*simulator.OtherParams{
 			{
 				FloatParams: map[string][]float64{},
-				IntParams:   map[string][]int64{},
+				IntParams: map[string][]int64{
+					"send_partitions": {0, 1, 2},
+				},
 			},
 			{
 				FloatParams: map[string][]float64{
@@ -62,9 +64,11 @@ func main() {
 		TimestepsHistoryDepth: 2,
 	}
 	partitions := make([]simulator.Partition, 0)
+	iteration0 := &simulator.ConstantValuesIteration{}
+	iteration0.Configure(0, settings)
 	partitions = append(
 		partitions,
-		simulator.Partition{Iteration: &simulator.ConstantValuesIteration{}},
+		simulator.Partition{Iteration: iteration0},
 	)
 	iteration1 := &phenomena.CompoundPoissonProcessIteration{
 		JumpDist: &gammaJumpDistribution{
