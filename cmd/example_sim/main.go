@@ -32,7 +32,7 @@ func main() {
 			{
 				FloatParams: map[string][]float64{},
 				IntParams: map[string][]int64{
-					"send_partitions": {0, 1, 2},
+					"action": {1.0, 1.0, 1.0},
 				},
 			},
 			{
@@ -63,13 +63,8 @@ func main() {
 		StateHistoryDepths:    []int{2, 2, 2},
 		TimestepsHistoryDepth: 2,
 	}
-	partitions := make([]simulator.Partition, 0)
-	iteration0 := &simulator.ConstantValuesIteration{}
+	iteration0 := &simio.ActionParamsIteration{}
 	iteration0.Configure(0, settings)
-	partitions = append(
-		partitions,
-		simulator.Partition{Iteration: iteration0},
-	)
 	iteration1 := &phenomena.CompoundPoissonProcessIteration{
 		JumpDist: &gammaJumpDistribution{
 			dist: &distuv.Gamma{
@@ -82,10 +77,6 @@ func main() {
 		},
 	}
 	iteration1.Configure(1, settings)
-	partitions = append(
-		partitions,
-		simulator.Partition{Iteration: iteration1},
-	)
 	iteration2 := &phenomena.CompoundPoissonProcessIteration{
 		JumpDist: &gammaJumpDistribution{
 			dist: &distuv.Gamma{
@@ -98,15 +89,16 @@ func main() {
 		},
 	}
 	iteration2.Configure(2, settings)
-	partitions = append(
-		partitions,
-		simulator.Partition{
+	partitions := []simulator.Partition{
+		{Iteration: iteration0},
+		{Iteration: iteration1},
+		{
 			Iteration: iteration2,
 			ParamsFromUpstreamPartition: map[string]int{
 				"rates": 0,
 			},
 		},
-	)
+	}
 	implementations := &simulator.Implementations{
 		Partitions:      partitions,
 		OutputCondition: &simulator.EveryStepOutputCondition{},
@@ -116,14 +108,5 @@ func main() {
 		},
 		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
 	}
-	websocketPartitionIndex := 0
-	handle := "/simio"
-	address := ":2112"
-	simio.RegisterRun(
-		settings,
-		implementations,
-		websocketPartitionIndex,
-		handle,
-		address,
-	)
+	simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }
