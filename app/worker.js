@@ -3,6 +3,7 @@ self.importScripts('google-protobuf.js');
 self.importScripts('partition_state_pb.js');
 
 let wasmInstance;
+let go;
 
 self.onmessage = async function(event) {
     if (event.data.action === 'start') {
@@ -12,7 +13,7 @@ self.onmessage = async function(event) {
 };
 
 async function loadWasm() {
-    const go = new Go();
+    go = new Go();
     const result = await WebAssembly.instantiateStreaming(fetch("example_sim.wasm"), go.importObject);
     go.run(result.instance);
     wasmInstance = result.instance;

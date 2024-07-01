@@ -40,13 +40,13 @@ func (j *JsCallbackOutputFunction) Output(
 // GenerateStepClosure creates a function which steps the stochadex
 // simulation engine given the provided configured inputs.
 func GenerateStepClosure(
+	wg *sync.WaitGroup,
 	callback *js.Value,
 	coordinator *simulator.PartitionCoordinator,
 	websocketPartitionIndex int,
 	handle string,
 	address string,
 ) func(this js.Value, args []js.Value) interface{} {
-	var wg sync.WaitGroup
 	return func(this js.Value, args []js.Value) interface{} {
 		*callback = args[0]
 		// Update action state from server if data is received
@@ -61,7 +61,7 @@ func GenerateStepClosure(
 			coordinator.Iterators[websocketPartitionIndex].
 				Params.FloatParams["action"] = actionState.Values
 		}
-		coordinator.Step(&wg)
+		coordinator.Step(wg)
 		return nil
 	}
 }
@@ -75,6 +75,7 @@ func RegisterStep(
 	handle string,
 	address string,
 ) {
+	var wg sync.WaitGroup
 	var callback js.Value
 	implementations.OutputFunction = &JsCallbackOutputFunction{
 		callback: &callback,
@@ -84,6 +85,7 @@ func RegisterStep(
 		implementations,
 	)
 	step := GenerateStepClosure(
+		&wg,
 		&callback,
 		coordinator,
 		websocketPartitionIndex,
