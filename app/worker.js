@@ -1,4 +1,6 @@
 self.importScripts('wasm_exec.js');
+self.importScripts('google-protobuf.js');
+self.importScripts('partition_state_pb.js');
 
 let wasmInstance;
 

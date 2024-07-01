@@ -13,7 +13,7 @@ import (
 // JsCallbackOutputFunction sets the callback function which passes
 // the simulation states to the surrounding JavaScript code.
 type JsCallbackOutputFunction struct {
-	callback js.Value
+	callback *js.Value
 }
 
 func (j *JsCallbackOutputFunction) Output(
@@ -33,36 +33,31 @@ func (j *JsCallbackOutputFunction) Output(
 	}
 	uint8Array := js.Global().Get("Uint8Array").New(len(sendBytes))
 	js.CopyBytesToJS(uint8Array, sendBytes)
-	j.callback.Invoke(uint8Array)
+	callback := *j.callback
+	callback.Invoke(uint8Array)
 }
 
 // GenerateStepClosure creates a function which steps the stochadex
 // simulation engine given the provided configured inputs.
 func GenerateStepClosure(
-	settings *simulator.Settings,
-	implementations *simulator.Implementations,
+	callback *js.Value,
+	coordinator *simulator.PartitionCoordinator,
 	websocketPartitionIndex int,
 	handle string,
 	address string,
-) func(this js.Value, p []js.Value) interface{} {
+) func(this js.Value, args []js.Value) interface{} {
 	var wg sync.WaitGroup
-	var coordinator *simulator.PartitionCoordinator
-	return func(this js.Value, p []js.Value) interface{} {
-		if coordinator != nil {
-			implementations.OutputFunction = &JsCallbackOutputFunction{
-				callback: p[0],
-			}
-			coordinator = simulator.NewPartitionCoordinator(
-				settings,
-				implementations,
-			)
-		}
+	return func(this js.Value, args []js.Value) interface{} {
+		*callback = args[0]
 		// Update action state from server if data is received
-		if !p[1].IsNull() {
+		if !args[1].IsNull() {
 			var stateBytes []byte
 			var actionState State
-			js.CopyBytesToGo(stateBytes, p[1])
-			proto.Unmarshal(stateBytes, &actionState)
+			js.CopyBytesToGo(stateBytes, args[1])
+			err := proto.Unmarshal(stateBytes, &actionState)
+			if err != nil {
+				panic(err)
+			}
 			coordinator.Iterators[websocketPartitionIndex].
 				Params.FloatParams["action"] = actionState.Values
 		}
@@ -80,9 +75,17 @@ func RegisterStep(
 	handle string,
 	address string,
 ) {
-	step := GenerateStepClosure(
+	var callback js.Value
+	implementations.OutputFunction = &JsCallbackOutputFunction{
+		callback: &callback,
+	}
+	coordinator := simulator.NewPartitionCoordinator(
 		settings,
 		implementations,
+	)
+	step := GenerateStepClosure(
+		&callback,
+		coordinator,
 		websocketPartitionIndex,
 		handle,
 		address,
