@@ -30,10 +30,10 @@ func main() {
 	settings := &simulator.Settings{
 		OtherParams: []*simulator.OtherParams{
 			{
-				FloatParams: map[string][]float64{},
-				IntParams: map[string][]int64{
+				FloatParams: map[string][]float64{
 					"action": {1.0, 1.0, 1.0},
 				},
+				IntParams: map[string][]int64{},
 			},
 			{
 				FloatParams: map[string][]float64{
@@ -70,9 +70,7 @@ func main() {
 			dist: &distuv.Gamma{
 				Alpha: 1.0,
 				Beta:  1.0,
-				Src: rand.NewSource(
-					settings.Seeds[1],
-				),
+				Src:   rand.NewSource(settings.Seeds[1]),
 			},
 		},
 	}
@@ -82,9 +80,7 @@ func main() {
 			dist: &distuv.Gamma{
 				Alpha: 1.0,
 				Beta:  1.0,
-				Src: rand.NewSource(
-					settings.Seeds[2],
-				),
+				Src:   rand.NewSource(settings.Seeds[2]),
 			},
 		},
 	}
