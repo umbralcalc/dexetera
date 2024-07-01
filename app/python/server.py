@@ -1,4 +1,3 @@
-import json
 import asyncio
 import websockets
 
@@ -20,18 +19,17 @@ class ActionTaker(Protocol):
 
 
 async def _launch_websocket_server(action_taker: ActionTaker):
+    received_messages: dict[int, list[float]] = {}
+
     async def _handle(websocket: WebSocketServerProtocol, path: str):
-        received_messages: dict[int, list[float]] = {}
         async for binary_message in websocket:
             message = PartitionState()
-            message.ParseFromString(binary_message.data)
+            message.ParseFromString(binary_message)
             received_messages[message.partition_index] = message.state.values
             time = message.cumulative_timesteps
             if len(received_messages) == action_taker.number_of_input_messages:
                 action_state = action_taker.take_next_action(time, received_messages)
-                await websocket.send(
-                    json.dumps({"data" : State(values=action_state).SerializeToString()})
-                )
+                await websocket.send(State(values=action_state).SerializeToString())
                 received_messages.clear()
 
     async with websockets.serve(_handle, "localhost", 2112):

@@ -21,13 +21,15 @@ async function loadWasm() {
 
 function startWebSocketClient() {
     const socket = new WebSocket('ws://localhost:2112');
+    socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
         console.log('WebSocket connection opened.');
         stepSimulation(handlePartitionState, null);
     };
-    socket.onmessage = function(event) {
-        const message = event.data;
-        stepSimulation(handlePartitionState, new Uint8Array(message));
+    socket.onmessage = async function(event) {
+        // const message = proto.State.deserializeBinary(new Uint8Array(event.data));
+        // console.log(message.getValuesList());
+        stepSimulation(handlePartitionState, new Uint8Array(event.data));
     };
     socket.onclose = function() {
         console.log('WebSocket connection closed.');
@@ -35,13 +37,13 @@ function startWebSocketClient() {
     socket.onerror = function(error) {
         console.error('WebSocket error:', error);
     };
-}
-
-// Callback function
-function handlePartitionState(data) {
-    const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
-    console.log("-------------------------------------------------------");
-    console.log("Cumulative Timesteps:", message.getCumulativeTimesteps());
-    console.log("Partition Index:", message.getPartitionIndex());
-    console.log("State:", message.getState().getValuesList());
+    // Callback function
+    function handlePartitionState(data) {
+        const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
+        console.log("-------------------------------------------------------");
+        console.log("Cumulative Timesteps:", message.getCumulativeTimesteps());
+        console.log("Partition Index:", message.getPartitionIndex());
+        console.log("State:", message.getState().getValuesList());
+        socket.send(data);
+    };
 }

@@ -51,8 +51,8 @@ func GenerateStepClosure(
 		*callback = args[0]
 		// Update action state from server if data is received
 		if !args[1].IsNull() {
-			var stateBytes []byte
 			var actionState State
+			stateBytes := make([]byte, args[1].Get("length").Int())
 			js.CopyBytesToGo(stateBytes, args[1])
 			err := proto.Unmarshal(stateBytes, &actionState)
 			if err != nil {
