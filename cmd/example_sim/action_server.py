@@ -3,7 +3,7 @@ from app.python.server import ActionTaker, launch_websocket_server
 
 class ExampleActionTaker(ActionTaker):
     @property
-    def input_state_map(self) -> dict[int, str]:
+    def state_map(self) -> dict[int, str]:
         return {
             0: "actions",
             1: "process_1",

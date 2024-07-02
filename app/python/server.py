@@ -8,7 +8,7 @@ from .partition_state_pb2 import PartitionState, State
 
 class ActionTaker(Protocol):
     @property
-    def input_state_map(self) -> dict[int, str]:
+    def state_map(self) -> dict[int, str]:
         ...
     def take_next_action(
         self, 
@@ -26,9 +26,9 @@ async def _launch_websocket_server(action_taker: ActionTaker):
             message = PartitionState()
             message.ParseFromString(binary_message)
             received_messages[
-                action_taker.input_state_map[message.partition_index]
+                action_taker.state_map[message.partition_index]
             ] = message.state.values
-            if len(received_messages) == len(action_taker.input_state_map):
+            if len(received_messages) == len(action_taker.state_map):
                 action_state = action_taker.take_next_action(
                     message.cumulative_timesteps, 
                     received_messages,
