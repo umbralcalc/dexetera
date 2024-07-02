@@ -2,8 +2,11 @@ self.importScripts('wasm_exec.js');
 self.importScripts('google-protobuf.js');
 self.importScripts('partition_state_pb.js');
 
-let wasmInstance;
 let go;
+let socket;
+let wasmInstance;
+let reconnectInterval = 2000; // 2 seconds
+let isConnected = false;
 
 self.onmessage = async function(event) {
     if (event.data.action === 'start') {
@@ -24,6 +27,7 @@ function startWebSocketClient() {
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
         console.log('WebSocket connection opened.');
+        isConnected = true;
         stepSimulation(handlePartitionState, null);
     };
     socket.onmessage = async function(event) {
@@ -33,9 +37,13 @@ function startWebSocketClient() {
     };
     socket.onclose = function() {
         console.log('WebSocket connection closed.');
+        isConnected = false;
+        reconnect();
     };
     socket.onerror = function(error) {
         console.error('WebSocket error:', error);
+        isConnected = false;
+        reconnect();
     };
     // Callback function
     function handlePartitionState(data) {
@@ -46,4 +54,11 @@ function startWebSocketClient() {
         console.log("State:", message.getState().getValuesList());
         socket.send(data);
     };
+}
+
+function reconnect() {
+    if (!isConnected) {
+        console.log(`Attempting to reconnect in ${reconnectInterval / 1000} seconds...`);
+        setTimeout(startWebSocketClient, reconnectInterval);
+    }
 }
