@@ -1,6 +1,6 @@
 # dexetera
 
-A home for simulation archetypes and AI agent training environments.
+A home for interactive simulation environments.
 
 ## Build the example sim
 
@@ -16,3 +16,5 @@ GOOS=js GOARCH=wasm go build -o ./app/example_sim.wasm ./cmd/example_sim/main.go
 # view the app running at http://localhost:8000
 cd app/ && python3 -m http.server 8000
 ```
+
+You can then interact with the sim using [DexAct](https://pypi.org/project/dexact/).
