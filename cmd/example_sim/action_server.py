@@ -1,4 +1,4 @@
-from app.python.server import ActionTaker, launch_websocket_server
+from dexact.server import ActionTaker, launch_websocket_server
 
 
 class ExampleActionTaker(ActionTaker):
@@ -12,7 +12,7 @@ class ExampleActionTaker(ActionTaker):
 
     def take_next_action(
         self, 
-        time: float, 
+        time: float,
         states: dict[str, list[float]]
     ) -> list[float]:
         return [s + 0.1 for s in states["actions"]]
