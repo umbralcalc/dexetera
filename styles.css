@@ -24,8 +24,8 @@ header {
     display: flex;
     justify-content: center;
     text-shadow:
-        2px 2px 0px #ff0000,
-        -2px -2px 0px #00ffff;
+        3px 3px 0px #ff0000,
+        -3px -3px 0px #00ffff;
 }
 
 .belowlogo {
@@ -46,8 +46,8 @@ header {
 .belowlogo a:hover {
     color: #333;
     text-shadow:
-        1px 1px 0px #ff0000,
-        -1px -1px 0px #00ffff;
+        2px 2px 0px #ff0000,
+        -2px -2px 0px #00ffff;
 }
 
 .letter {
@@ -84,11 +84,11 @@ h1, .h1 {
 }
 
 .panel:nth-child(odd) {
-    transform: translateY(-5%); /* Move odd panels left */
+    transform: translateY(-5%);
 }
 
 .panel:nth-child(even) {
-    transform: translateY(5%); /* Move even panels right */
+    transform: translateY(5%);
 }
 
 .panel:hover {
@@ -108,8 +108,38 @@ h1, .h1 {
     color: inherit;
 }
 
+.arrow {
+    display: inline-block;
+    animation: arrowFlow 2s linear infinite;
+}
+
+@keyframes arrowFlow {
+    0% {
+        color: #777;
+    }
+    50% {
+        color: #333;
+        text-shadow:
+            2px 2px 0px #ff0000,
+            -2px -2px 0px #00ffff;
+    }
+    100% {
+        color: #777;
+    }
+}
+
 @media (max-width: 600px) {
     .container {
         grid-template-columns: 1fr;
+    }
+    .panel {
+        transform: translateX(0);
+    }
+    .panel:nth-child(odd) {
+        transform: translateY(0);
+    }
+    
+    .panel:nth-child(even) {
+        transform: translateY(0);
     }
 }
