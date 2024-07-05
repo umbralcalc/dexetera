@@ -1,13 +1,13 @@
-# dexetera
+# dexetera...
 
 A home for interactive simulation environments.
 
 ## Build the example sim
 
-In order to build the example sim with WebAssembly, you run:
+In order to build an example sim with WebAssembly, you run:
 
 ```shell
-GOOS=js GOARCH=wasm go build -o ./app/example_sim.wasm ./cmd/example_sim/main.go 
+GOOS=js GOARCH=wasm go build -o ./app/src/example_sim_1/main.wasm ./cmd/example_sim_1/main.go 
 ```
 
 ## Run the example sim

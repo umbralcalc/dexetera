@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wasm App</title>
+    <link rel="stylesheet" href="src/example_sim_1/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Wasm App</h1>
+        <p>Click the button below to run the application locally.</p>
+        <button id="startButton">Start Button</button>
+    </div>
+    <script src="src/google-protobuf.js"></script>
+    <script src="src/partition_state_pb.js"></script>
+    <script src="src/wasm_exec.js"></script>
+    <script>
+        document.getElementById('startButton').addEventListener('click', () => {
+            const worker = new Worker('src/worker.js');
+            worker.postMessage({ action: 'start', wasmBinary: 'example_sim_1/main.wasm' });
+        });
+    </script>
+</body>
+</html>
