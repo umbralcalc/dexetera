@@ -1,8 +1,8 @@
 # dexetera...
 
-A toolkit to build purely-frontend web applications for interactive [stochadex](https://github.com/umbralcalc/stochadex) simulations.
+Purely-frontend web applications for interactive [stochadex](https://github.com/umbralcalc/stochadex) simulations.
 
-## Build the example simulation
+## Build an example simulation
 
 In order to build an example simulation with WebAssembly, you run:
 
@@ -10,7 +10,7 @@ In order to build an example simulation with WebAssembly, you run:
 GOOS=js GOARCH=wasm go build -o ./app/src/example_sim_1/main.wasm ./cmd/example_sim_1/main.go 
 ```
 
-## Run the example simulation
+## Run an example simulation
 
 ```shell
 # view the app running at http://localhost:8000/example_sim_1.html
