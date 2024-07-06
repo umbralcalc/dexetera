@@ -2,6 +2,8 @@
 
 Purely-frontend web applications for interactive [stochadex](https://github.com/umbralcalc/stochadex) simulations.
 
+For more context, here is also an article describing applications to various real-world simulation archetypes: [https://umbralcalc.github.io/posts/dexetera.html](https://umbralcalc.github.io/posts/dexetera.html).
+
 ## Build an example simulation
 
 In order to build an example simulation with WebAssembly, you run:
