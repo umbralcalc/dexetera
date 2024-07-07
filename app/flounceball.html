@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Wasm App</title>
+    <title>Flounceball tactics</title>
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-    <link rel="stylesheet" href="src/example_sim_1/styles.css">
+    <link rel="stylesheet" href="src/flounceball/styles.css">
 </head>
 <body>
     <div class="container">
@@ -17,7 +17,7 @@
     <script>
         document.getElementById('startButton').addEventListener('click', () => {
             const worker = new Worker('src/worker.js');
-            worker.postMessage({ action: 'start', wasmBinary: 'example_sim_1/main.wasm' });
+            worker.postMessage({ action: 'start', wasmBinary: 'flounceball/main.wasm' });
         });
     </script>
 </body>
