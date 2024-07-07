@@ -1,7 +1,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #9966CB;
+    background-color: #333;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -11,7 +11,7 @@ body {
 header {
     width: 100%;
     text-align: center;
-    background-color: #9966CB;
+    background-color: #333;
     padding: 10px 0;
 }
 
@@ -20,12 +20,12 @@ header {
     font-family: "Tiny5", sans-serif;
     font-weight: 400;
     font-style: normal;
-    color: #333;
+    color: #E5E4E2;
     display: flex;
     justify-content: center;
     text-shadow:
-        3px 3px 0px #ff0000,
-        -3px -3px 0px #00ffff;
+        2px 2px 0px #ff0000,
+        -2px -2px 0px #00ffff;
 }
 
 .belowlogo {
@@ -44,10 +44,10 @@ header {
 }
 
 .belowlogo a:hover {
-    color: #333;
+    color: #9966cc;
     text-shadow:
-        2px 2px 0px #ff0000,
-        -2px -2px 0px #00ffff;
+        1px 1px 0px #ff0000,
+        -1px -1px 0px #00ffff;
 }
 
 .letter {
@@ -119,10 +119,10 @@ h1, .h1 {
         color: #E5E4E2;
     }
     50% {
-        color: #333;
+        color: #9966cc;
         text-shadow:
-            2px 2px 0px #ff0000,
-            -2px -2px 0px #00ffff;
+            1px 1px 0px #ff0000,
+            -1px -1px 0px #00ffff;
     }
     100% {
         color: #E5E4E2;
