@@ -11,6 +11,15 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+// The role of Hyperspace Traffic Control:
+// 1. The inter-galactic travel business is booming, but there are only
+// a limited number of hyperspace jump points to connect the cosmos.
+// 2. These jump points represent nodes of a hyperspace network of lanes
+// through which space traffic may pass in either direction.
+// 3. Hyperspace Traffic Control is tasked with monitoring and controlling
+// congestion along these busy lanes, where jump points may be blocked
+// to certain travel directions at any point in time.
+
 // gammaJumpDistribution jumps the compound Poisson process with samples
 // drawn from a gamma distribution - this is just for testing.
 type gammaJumpDistribution struct {
