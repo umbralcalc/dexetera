@@ -19,6 +19,8 @@ import (
 // 3. Hyperspace Traffic Control is tasked with monitoring and controlling
 // congestion along these busy lanes, where jump points may be blocked
 // to certain travel directions at any point in time.
+// 4. Each node has a finite number of 'Control Stage' states that it
+// can exist in.
 
 // gammaJumpDistribution jumps the compound Poisson process with samples
 // drawn from a gamma distribution - this is just for testing.
