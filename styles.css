@@ -16,7 +16,7 @@ header {
 }
 
 .logo {
-    font-size: 6rem;
+    font-size: 5rem;
     font-family: "Tiny5", sans-serif;
     font-weight: 400;
     font-style: normal;
@@ -29,9 +29,9 @@ header {
 }
 
 .belowlogo {
-    font-size: 2rem;
-    font-family: "Tiny5", sans-serif;
-    font-weight: 400;
+    font-size: 1.5rem;
+    font-family: "Oxygen", sans-serif;
+    font-weight: 600;
     font-style: normal;
     color: #E5E4E2;
     display: flex;
@@ -44,10 +44,7 @@ header {
 }
 
 .belowlogo a:hover {
-    color: #9966cc;
-    text-shadow:
-        1px 1px 0px #ff0000,
-        -1px -1px 0px #00ffff;
+    color: #ff0000;
 }
 
 .letter {
@@ -116,16 +113,13 @@ h1, .h1 {
 
 @keyframes arrowFlow {
     0% {
-        color: #E5E4E2;
+        color: #333;
     }
     50% {
-        color: #9966cc;
-        text-shadow:
-            1px 1px 0px #ff0000,
-            -1px -1px 0px #00ffff;
+        color: #E5E4E2;
     }
     100% {
-        color: #E5E4E2;
+        color: #333;
     }
 }
 
