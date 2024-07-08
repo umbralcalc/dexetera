@@ -6,10 +6,19 @@
     <link rel="stylesheet" href="src/flounceball/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Wasm App</h1>
-        <p>Click the button below to run the application locally.</p>
-        <button id="startButton">Start Button</button>
+    <div id="pitch" class="blurred">
+        <img src="assets/flounceball-pitch.svg" alt="Pitch" id="pitch-image">
+    </div>
+    <div id="overlay">
+        <div class="panel">
+            <h2>How to Play</h2>
+            <p>Instructions on how to play the game...</p>
+        </div>
+        <div class="panel">
+            <h2>Game Rules</h2>
+            <p>Explanation of the game rules...</p>
+        </div>
+        <button id="startButton">Start Simulation</button>
     </div>
     <script src="src/google-protobuf.js"></script>
     <script src="src/partition_state_pb.js"></script>
@@ -18,6 +27,8 @@
         document.getElementById('startButton').addEventListener('click', () => {
             const worker = new Worker('src/worker.js');
             worker.postMessage({ action: 'start', wasmBinary: 'flounceball/main.wasm' });
+            document.getElementById('pitch').classList.remove('blurred');
+            document.getElementById('overlay').style.display = 'none';
         });
     </script>
 </body>
