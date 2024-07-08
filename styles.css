@@ -106,23 +106,6 @@ h1, .h1 {
     color: inherit;
 }
 
-.arrow {
-    display: inline-block;
-    animation: arrowFlow 2s linear infinite;
-}
-
-@keyframes arrowFlow {
-    0% {
-        color: #333;
-    }
-    50% {
-        color: #E5E4E2;
-    }
-    100% {
-        color: #333;
-    }
-}
-
 @media (max-width: 600px) {
     .container {
         grid-template-columns: 1fr;
