@@ -4,22 +4,62 @@
     <title>Flounceball tactics</title>
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="src/flounceball/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arsenal+SC:ital,wght@0,400;0,700;1,400;1,700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
     <div id="pitch" class="blurred">
         <img src="assets/flounceball-pitch.svg" alt="Pitch" id="pitch-image">
     </div>
     <div id="overlay">
-        <div class="panel">
-            <h2>How to Play</h2>
-            <p>Instructions on how to play the game...</p>
+        <div class="panels-container">
+            <div class="panel">
+                <h2>Rules of Flounceball:</h2>
+                <p>1. The objective of the game is for each team to keep the ball in the air for as long as possible.</p>
+                <p>2. Possession alternates between each team, where the objective of the defensive side is to stop the ball from staying in the air by disrupting the play of the attacking side.</p>
+                <p>3. Defensive players are not allowed to touch the ball, otherwise the time the ball has remained in the air is subtracted from their team total.</p>
+                <p>4. Defensive players may tackle any attacking player within 10m radius of the lat/long ball location.</p>
+                <p>5. Player substitutions may occur continuously throughout the match and there is no limit to them.</p>
+                <p>6. The game takes place on a circular field and if the ball leaves this area at any time, then the possession of the attacking team is ended.</p>
+                <p>7. A match is 40 minutes of continuous play, without stoppages.</p>
+            </div>
+            <div class="panel">
+                <h2>How to play:</h2>
+                <p>You are the Flounceball team manager and tactician. You must guide your side to victory through player substitutions and continuously tweaking team tactics.</p> 
+                <p>Edit/run this code below and then click the "Start Simulation" button to play:</p>
+                <pre><code class="language-python">
+from dexact.server import (
+    ActionTaker, launch_websocket_server
+)
+
+class ExampleActionTaker(ActionTaker):
+    @property
+    def state_map(self) -> dict[int, str]:
+        return {
+            0: "actions",
+            1: "another_state",
+            ...
+        }
+
+    def take_next_action(
+        self, 
+        time: float, 
+        states: dict[str, list[float]]
+    ) -> list[float]:
+        ...
+
+if __name__ == "__main__":
+    launch_websocket_server(ExampleActionTaker())
+                </code></pre>
+                <button id="startButton">Start Simulation</button>
+            </div>
         </div>
-        <div class="panel">
-            <h2>Game Rules</h2>
-            <p>Explanation of the game rules...</p>
-        </div>
-        <button id="startButton">Start Simulation</button>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script>hljs.highlightAll();</script>
     <script src="src/google-protobuf.js"></script>
     <script src="src/partition_state_pb.js"></script>
     <script src="src/wasm_exec.js"></script>

@@ -41,7 +41,8 @@ body, html {
     align-items: center;
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
-    text-align: center;
+    text-align: left;
+    font-family: "Oxygen", sans-serif;
 }
 
 .panel {
@@ -51,6 +52,13 @@ body, html {
     border-radius: 10px;
     width: 80%;
     max-width: 600px;
+}
+
+.panels-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
 }
 
 #startButton {
@@ -66,4 +74,11 @@ body, html {
 
 #startButton:hover {
     background-color: #218838;
+}
+
+code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: small;
+    border-radius: 5px;
+    overflow-x: auto;
 }

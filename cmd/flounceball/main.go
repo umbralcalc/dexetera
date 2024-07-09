@@ -11,22 +11,6 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-// Rules of Flounceball:
-// 1. The objective of the game is for each team to keep the ball in the
-// air for as long as possible.
-// 2. Possession alternates between each team, where the objective of the
-// defensive side is to stop the ball from staying in the air by disrupting
-// the play of the attacking side.
-// 3. Defensive players are not allowed to touch the ball, otherwise the
-// time the ball has remained in the air is subtracted from their team total.
-// 4. Defensive players may tackle any attacking player within 10m radius of
-// the lat/long ball location.
-// 5. Player substitutions may occur continuously throughout the match and
-// there is no limit to them.
-// 6. The game takes place on a circular field and if the ball leaves this
-// area at any time, then the possession of the attacking team is ended.
-// 7. A match is 40 minutes of continuous play, without stoppages.
-
 // gammaJumpDistribution jumps the compound Poisson process with samples
 // drawn from a gamma distribution - this is just for testing.
 type gammaJumpDistribution struct {
