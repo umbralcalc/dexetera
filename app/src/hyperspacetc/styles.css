@@ -65,7 +65,7 @@ body, html {
     padding: 10px 20px;
     margin-top: 20px;
     font-size: 18px;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.4);
     color: white;
     border: none;
     border-radius: 5px;
@@ -73,7 +73,7 @@ body, html {
 }
 
 #startButton:hover {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
 code {
