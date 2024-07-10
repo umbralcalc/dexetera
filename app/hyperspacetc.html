@@ -1,16 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Hyperspace traffic control</title>
+    <title>Hyperspace Traffic Control</title>
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="src/hyperspacetc/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arsenal+SC:ital,wght@0,400;0,700;1,400;1,700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Wasm App</h1>
-        <p>Click the button below to run the application locally.</p>
-        <button id="startButton">Start Button</button>
+    <div id="bkg" class="blurred">
+        <img src="assets/hyperspacetc-background.svg" alt="Bkg" id="bkg-image">
     </div>
+    <div id="overlay">
+        <div class="panels-container">
+            <div class="panel">
+                <h2>The role of Hyperspace Traffic Control:</h2>
+                <p>1. The inter-galactic travel business is booming, but there are only a limited number of hyperspace jump points to connect the cosmos.</p>
+                <p>2. These jump points represent nodes of a hyperspace network of lanes through which space traffic may pass in either direction.</p>
+                <p>3. Hyperspace Traffic Control is tasked with monitoring and controlling congestion along these busy lanes, where jump points may be blocked to certain travel directions at any point in time.</p>
+                <p>4. Each node has a finite number of 'Control Stage' states that it can exist in.</p>
+            </div>
+            <div class="panel">
+                <h2>How to play:</h2>
+                <p>You are the head of Hyperspace Traffic Control for the next 10 years. Your job is to maximise the flow of inter-galactic traffic through controlling jump points.</p> 
+                <p>Edit/run this code below and then click the "Start Simulation" button to play:</p>
+                <pre><code class="language-python">
+from dexact.server import (
+    ActionTaker, launch_websocket_server
+)
+
+class ExampleActionTaker(ActionTaker):
+    @property
+    def state_map(self) -> dict[int, str]:
+        return {
+            0: "actions",
+            1: "another_state",
+            ...
+        }
+
+    def take_next_action(
+        self, 
+        time: float, 
+        states: dict[str, list[float]]
+    ) -> list[float]:
+        ...
+
+if __name__ == "__main__":
+    launch_websocket_server(ExampleActionTaker())
+                </code></pre>
+                <button id="startButton">Start Simulation</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script>hljs.highlightAll();</script>
     <script src="src/google-protobuf.js"></script>
     <script src="src/partition_state_pb.js"></script>
     <script src="src/wasm_exec.js"></script>
@@ -18,6 +64,8 @@
         document.getElementById('startButton').addEventListener('click', () => {
             const worker = new Worker('src/worker.js');
             worker.postMessage({ action: 'start', wasmBinary: 'hyperspacetc/main.wasm' });
+            document.getElementById('bkg').classList.remove('blurred');
+            document.getElementById('overlay').style.display = 'none';
         });
     </script>
 </body>

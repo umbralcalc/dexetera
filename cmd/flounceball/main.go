@@ -11,6 +11,24 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+// PitchRadiusMetres is the radius of the circular pitch.
+const PitchRadiusMetres = 100.0
+
+// PossessionValueMap is a mapping to check which team is in possession
+// based on the value of the possession state index.
+var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
+
+// MatchStateValueIndices is a mapping which helps with describing the
+// meaning of the values for each match state index.
+var MatchStateValueIndices = map[string]int{
+	"Possession State":            0,
+	"Your Team Total Score":       1,
+	"Other Team Total Score":      2,
+	"Radial Ball Position State":  3,
+	"Angular Ball Position State": 4,
+	// Add player locations here - explainable why not in separate partition? How many each side?
+}
+
 // gammaJumpDistribution jumps the compound Poisson process with samples
 // drawn from a gamma distribution - this is just for testing.
 type gammaJumpDistribution struct {
