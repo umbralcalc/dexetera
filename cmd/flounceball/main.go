@@ -3,12 +3,10 @@
 package main
 
 import (
-	"github.com/umbralcalc/dexetera/pkg/simio"
-	"github.com/umbralcalc/stochadex/pkg/phenomena"
-	"github.com/umbralcalc/stochadex/pkg/simulator"
+	"strconv"
 
-	"golang.org/x/exp/rand"
-	"gonum.org/v1/gonum/stat/distuv"
+	"github.com/umbralcalc/dexetera/pkg/simio"
+	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
 // PitchRadiusMetres is the radius of the circular pitch.
@@ -21,66 +19,70 @@ var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
 // MatchStateValueIndices is a mapping which helps with describing the
 // meaning of the values for each match state index.
 var MatchStateValueIndices = map[string]int{
-	"Possession State":                            0,
-	"Your Team Total Time Score":                  1,
-	"Other Team Total Time Score":                 2,
-	"Ball Radial Position State":                  3,
-	"Ball Angular Position State":                 4,
-	"Your Team Player 1 Radial Position State":    5,
-	"Your Team Player 1 Angular Position State":   6,
-	"Your Team Player 2 Radial Position State":    7,
-	"Your Team Player 2 Angular Position State":   8,
-	"Your Team Player 3 Radial Position State":    9,
-	"Your Team Player 3 Angular Position State":   10,
-	"Your Team Player 4 Radial Position State":    11,
-	"Your Team Player 4 Angular Position State":   12,
-	"Your Team Player 5 Radial Position State":    13,
-	"Your Team Player 5 Angular Position State":   14,
-	"Your Team Player 6 Radial Position State":    15,
-	"Your Team Player 6 Angular Position State":   16,
-	"Your Team Player 7 Radial Position State":    17,
-	"Your Team Player 7 Angular Position State":   18,
-	"Your Team Player 8 Radial Position State":    19,
-	"Your Team Player 8 Angular Position State":   20,
-	"Your Team Player 9 Radial Position State":    21,
-	"Your Team Player 9 Angular Position State":   22,
-	"Your Team Player 10 Radial Position State":   23,
-	"Your Team Player 10 Angular Position State":  24,
-	"Other Team Player 1 Radial Position State":   25,
-	"Other Team Player 1 Angular Position State":  26,
-	"Other Team Player 2 Radial Position State":   27,
-	"Other Team Player 2 Angular Position State":  28,
-	"Other Team Player 3 Radial Position State":   29,
-	"Other Team Player 3 Angular Position State":  30,
-	"Other Team Player 4 Radial Position State":   31,
-	"Other Team Player 4 Angular Position State":  32,
-	"Other Team Player 5 Radial Position State":   33,
-	"Other Team Player 5 Angular Position State":  34,
-	"Other Team Player 6 Radial Position State":   35,
-	"Other Team Player 6 Angular Position State":  36,
-	"Other Team Player 7 Radial Position State":   37,
-	"Other Team Player 7 Angular Position State":  38,
-	"Other Team Player 8 Radial Position State":   39,
-	"Other Team Player 8 Angular Position State":  40,
-	"Other Team Player 9 Radial Position State":   41,
-	"Other Team Player 9 Angular Position State":  42,
-	"Other Team Player 10 Radial Position State":  43,
-	"Other Team Player 10 Angular Position State": 44,
+	"Possession State":             0,
+	"Your Team Total Time Score":   1,
+	"Other Team Total Time Score":  2,
+	"Ball Radial Position State":   3,
+	"Ball Angular Position State":  4,
+	"Ball Vertical Position State": 5,
 }
 
-// gammaJumpDistribution jumps the compound Poisson process with samples
-// drawn from a gamma distribution - this is just for testing.
-type gammaJumpDistribution struct {
-	dist *distuv.Gamma
+// PlayerStateValueIndices is a mapping which helps with describing the
+// meaning of the values for each player state index.
+var PlayerStateValueIndices = map[string]int{
+	"Radial Position State":  0,
+	"Angular Position State": 1,
 }
 
-func (g *gammaJumpDistribution) NewJump(
+// PlayerStateIteration describes the iteration of an individual player
+// state in a Flounceball match.
+type PlayerStateIteration struct {
+}
+
+func (p *PlayerStateIteration) Configure(
+	partitionIndex int,
+	settings *simulator.Settings,
+) {
+}
+
+func (p *PlayerStateIteration) Iterate(
 	params *simulator.OtherParams,
-	stateElement int,
-) float64 {
-	g.dist.Alpha = params.FloatParams["gamma_alphas"][stateElement]
-	g.dist.Beta = params.FloatParams["gamma_betas"][stateElement]
-	return g.dist.Rand()
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	return make([]float64, 0)
+}
+
+// MatchStateIteration describes the iteration of a Flounceball match
+// state in response to player positions and manager decisions.
+type MatchStateIteration struct {
+}
+
+func (m *MatchStateIteration) Configure(
+	partitionIndex int,
+	settings *simulator.Settings,
+) {
+}
+
+func (m *MatchStateIteration) Iterate(
+	params *simulator.OtherParams,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	ballRadius := stateHistories[partitionIndex].Values.At(
+		0,
+		MatchStateValueIndices["Ball Radial Position State"],
+	)
+	ballAngle := stateHistories[partitionIndex].Values.At(
+		0,
+		MatchStateValueIndices["Ball Angular Position State"],
+	)
+	for i := 1; i < 11; i++ {
+		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
+	}
+	return make([]float64, 0)
 }
 
 func main() {
@@ -120,37 +122,18 @@ func main() {
 		StateHistoryDepths:    []int{2, 2, 2},
 		TimestepsHistoryDepth: 2,
 	}
-	iteration0 := &simio.ActionParamsIteration{}
-	iteration0.Configure(0, settings)
-	iteration1 := &phenomena.CompoundPoissonProcessIteration{
-		JumpDist: &gammaJumpDistribution{
-			dist: &distuv.Gamma{
-				Alpha: 1.0,
-				Beta:  1.0,
-				Src:   rand.NewSource(settings.Seeds[1]),
-			},
-		},
-	}
-	iteration1.Configure(1, settings)
-	iteration2 := &phenomena.CompoundPoissonProcessIteration{
-		JumpDist: &gammaJumpDistribution{
-			dist: &distuv.Gamma{
-				Alpha: 1.0,
-				Beta:  1.0,
-				Src:   rand.NewSource(settings.Seeds[2]),
-			},
-		},
-	}
-	iteration2.Configure(2, settings)
 	partitions := []simulator.Partition{
-		{Iteration: iteration0},
-		{Iteration: iteration1},
+		{Iteration: &simio.ActionParamsIteration{}},
+		{Iteration: &simulator.ConstantValuesIteration{}},
 		{
-			Iteration: iteration2,
+			Iteration: &simulator.ConstantValuesIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"rates": 0,
 			},
 		},
+	}
+	for index, partition := range partitions {
+		partition.Iteration.Configure(index, settings)
 	}
 	implementations := &simulator.Implementations{
 		Partitions:      partitions,
