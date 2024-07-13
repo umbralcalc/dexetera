@@ -31,7 +31,7 @@ func main() {
 		OtherParams: []*simulator.OtherParams{
 			{
 				FloatParams: map[string][]float64{
-					"action": {1.0, 1.0, 1.0},
+					"param_values": {1.0, 1.0, 1.0},
 				},
 				IntParams: map[string][]int64{},
 			},
@@ -63,7 +63,7 @@ func main() {
 		StateHistoryDepths:    []int{2, 2, 2},
 		TimestepsHistoryDepth: 2,
 	}
-	iteration0 := &simio.ActionParamsIteration{}
+	iteration0 := &simulator.ParamValuesIteration{}
 	iteration0.Configure(0, settings)
 	iteration1 := &phenomena.CompoundPoissonProcessIteration{
 		JumpDist: &gammaJumpDistribution{

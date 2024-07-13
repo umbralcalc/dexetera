@@ -90,7 +90,7 @@ func main() {
 		OtherParams: []*simulator.OtherParams{
 			{
 				FloatParams: map[string][]float64{
-					"action": {1.0, 1.0, 1.0},
+					"param_values": {1.0, 1.0, 1.0},
 				},
 				IntParams: map[string][]int64{},
 			},
@@ -123,7 +123,7 @@ func main() {
 		TimestepsHistoryDepth: 2,
 	}
 	partitions := []simulator.Partition{
-		{Iteration: &simio.ActionParamsIteration{}},
+		{Iteration: &simulator.ParamValuesIteration{}},
 		{Iteration: &simulator.ConstantValuesIteration{}},
 		{
 			Iteration: &simulator.ConstantValuesIteration{},
