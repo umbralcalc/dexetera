@@ -20,11 +20,12 @@ var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
 // meaning of the values for each match state index.
 var MatchStateValueIndices = map[string]int{
 	"Possession State":             0,
-	"Your Team Total Time Score":   1,
-	"Other Team Total Time Score":  2,
-	"Ball Radial Position State":   3,
-	"Ball Angular Position State":  4,
-	"Ball Vertical Position State": 5,
+	"Your Team Total Air Time":     1,
+	"Other Team Total Air Time":    2,
+	"Ball Possession Air Time":     3,
+	"Ball Radial Position State":   4,
+	"Ball Angular Position State":  5,
+	"Ball Vertical Position State": 6,
 }
 
 // PlayerStateValueIndices is a mapping which helps with describing the

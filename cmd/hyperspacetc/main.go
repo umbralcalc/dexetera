@@ -11,6 +11,12 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
+// Planned approach:
+// - Essentially a fake car-following model for the underlying dynamics
+// of spacecraft.
+// - Use the histogram node iteraton when constructing the node
+// controller logic.
+
 // gammaJumpDistribution jumps the compound Poisson process with samples
 // drawn from a gamma distribution - this is just for testing.
 type gammaJumpDistribution struct {
