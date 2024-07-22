@@ -55,6 +55,26 @@ func (p *PlayerStateIteration) Iterate(
 	return make([]float64, 0)
 }
 
+// generateMatchStateValueGetter creates a closure which reduces the
+// amount of code required to retrieve state values.
+func generateMatchStateValueGetter(
+	stateHistory *simulator.StateHistory,
+) func(key string) float64 {
+	return func(key string) float64 {
+		return stateHistory.Values.At(0, MatchStateValueIndices[key])
+	}
+}
+
+// generateMatchStateValueSetter creates a closure which reduces the
+// amount of code required to reassign state values.
+func generateMatchStateValueSetter(
+	stateHistory *simulator.StateHistory,
+) func(key string, value float64) {
+	return func(key string, value float64) {
+		stateHistory.Values.Set(0, MatchStateValueIndices[key], value)
+	}
+}
+
 // MatchStateIteration describes the iteration of a Flounceball match
 // state in response to player positions and manager decisions.
 type MatchStateIteration struct {
@@ -72,16 +92,13 @@ func (m *MatchStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	ballRadius := stateHistories[partitionIndex].Values.At(
-		0,
-		MatchStateValueIndices["Ball Radial Position State"],
-	)
-	ballAngle := stateHistories[partitionIndex].Values.At(
-		0,
-		MatchStateValueIndices["Ball Angular Position State"],
-	)
+	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
+	setMatchState := generateMatchStateValueSetter(stateHistories[partitionIndex])
+	ballRadius := getMatchState("Ball Radial Position State")
+	ballAngle := getMatchState("Ball Angular Position State")
+	ballVert := getMatchState("Ball Vertical Position State")
 	for i := 1; i < 11; i++ {
-		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
+		radiusAngle := getMatchState("your_player_" + strconv.Itoa(i) + "_radius_angle")
 	}
 	return make([]float64, 0)
 }
