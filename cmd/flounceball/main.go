@@ -35,6 +35,34 @@ var PlayerStateValueIndices = map[string]int{
 	"Angular Position State": 1,
 }
 
+// generatePlayerStateValuesGetter creates a closure which reduces the
+// amount of code required to retrieve state values for all players.
+func generatePlayerStateValuesGetter(
+	playerPartitionIndices []int64,
+	stateHistories []*simulator.StateHistory,
+) func(key string) []float64 {
+	return func(key string) []float64 {
+		values := make([]float64, 0)
+		for _, index := range playerPartitionIndices {
+			values = append(
+				values,
+				stateHistories[index].Values.At(0, PlayerStateValueIndices[key]),
+			)
+		}
+		return values
+	}
+}
+
+// generatePlayerStateValueSetter creates a closure which reduces the
+// amount of code required to reassign state values for a player.
+func generatePlayerStateValueSetter(
+	stateHistory *simulator.StateHistory,
+) func(key string, value float64) {
+	return func(key string, value float64) {
+		stateHistory.Values.Set(0, PlayerStateValueIndices[key], value)
+	}
+}
+
 // PlayerStateIteration describes the iteration of an individual player
 // state in a Flounceball match.
 type PlayerStateIteration struct {
@@ -52,6 +80,21 @@ func (p *PlayerStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
+	getMatchState := generateMatchStateValueGetter(
+		stateHistories[params.IntParams["match_partition_index"][0]],
+	)
+	getYourPlayerStates := generatePlayerStateValuesGetter(
+		params.IntParams["your_player_partition_indices"],
+		stateHistories,
+	)
+	getOtherPlayerStates := generatePlayerStateValuesGetter(
+		params.IntParams["other_player_partition_indices"],
+		stateHistories,
+	)
+	setYourPlayerState := generatePlayerStateValueSetter(stateHistories[partitionIndex])
+	// TODO: Logic for attacking player disruptions from defensive players - limits accuracy
+	// TODO: Logic for attacking player attempted trajectory choice
+	// TODO: Logic for team positioning tactics when in possession and not in possession
 	return make([]float64, 0)
 }
 
@@ -94,11 +137,14 @@ func (m *MatchStateIteration) Iterate(
 ) []float64 {
 	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
 	setMatchState := generateMatchStateValueSetter(stateHistories[partitionIndex])
+	// TODO: Logic for ball trajectories - needs to hit the ground and be motionless
+	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
+	// TODO: Logic for posession air time updates when ball is in play
 	ballRadius := getMatchState("Ball Radial Position State")
 	ballAngle := getMatchState("Ball Angular Position State")
 	ballVert := getMatchState("Ball Vertical Position State")
 	for i := 1; i < 11; i++ {
-		radiusAngle := getMatchState("your_player_" + strconv.Itoa(i) + "_radius_angle")
+		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
 	}
 	return make([]float64, 0)
 }
