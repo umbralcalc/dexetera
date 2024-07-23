@@ -1,6 +1,8 @@
 # dexetera...
 
-The dexetera framework is for developing purely-frontend web applications for interactive [stochadex](https://github.com/umbralcalc/stochadex) simulations. The compiled simulation can be 'stepped' in time through interactions with a websocket server on the user's machine. Custom visualisations for these interactive simulations can also be developed in the JavaScript code which runs the simulation steps (see, e.g., `app/flounceball.html`). For more context, here is the associated technical article about this project: [https://umbralcalc.github.io/posts/dexetera.html](https://umbralcalc.github.io/posts/dexetera.html).
+The dexetera framework is for developing purely-frontend web applications for interactive [stochadex](https://github.com/umbralcalc/stochadex) simulations. The compiled simulation can be 'stepped' in time through interactions with a websocket server on the user's machine. Custom visualisations for these interactive simulations can also be developed in the JavaScript code which runs the simulation steps (see, e.g., `app/flounceball.html`).
+
+For more context, here is the associated technical article about this project: [https://umbralcalc.github.io/posts/dexetera.html](https://umbralcalc.github.io/posts/dexetera.html).
 
 ## Build a simulation
 
@@ -25,6 +27,7 @@ You can then interact with the simulation using any desired websocket server app
 # install dexact into your local python environment
 pip install dexact
 
-# run the python action server while the app is running at http://localhost:8000/flounceball.html
+# run the python action server while the app is 
+# running at http://localhost:8000/flounceball.html
 python cmd/flounceball/action_server.py
 ```
