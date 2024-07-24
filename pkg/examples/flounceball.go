@@ -16,13 +16,14 @@ var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
 // MatchStateValueIndices is a mapping which helps with describing the
 // meaning of the values for each match state index.
 var MatchStateValueIndices = map[string]int{
-	"Possession State":             0,
-	"Your Team Total Air Time":     1,
-	"Other Team Total Air Time":    2,
-	"Ball Possession Air Time":     3,
-	"Ball Radial Position State":   4,
-	"Ball Angular Position State":  5,
-	"Ball Vertical Position State": 6,
+	"Possession State":                      0,
+	"Your Team Total Air Time":              1,
+	"Other Team Total Air Time":             2,
+	"Ball Possession Air Time":              3,
+	"Ball Radial Position State":            4,
+	"Ball Angular Position State":           5,
+	"Ball Projected Radial Position State":  6,
+	"Ball Projected Angular Position State": 7,
 }
 
 // PlayerStateValueIndices is a mapping which helps with describing the
@@ -90,8 +91,9 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	)
 	setYourPlayerState := generatePlayerStateValueSetter(stateHistories[partitionIndex])
 	// TODO: Logic for attacking player disruptions from defensive players - limits accuracy
-	// TODO: Logic for attacking player attempted trajectory choice
+	// TODO: Logic for attacking player attempted trajectory choice and noise on this
 	// TODO: Logic for team positioning tactics when in possession and not in possession
+	// TODO: ...which can depend on the ball location, projected ball location and other players
 	return make([]float64, 0)
 }
 
@@ -134,12 +136,11 @@ func (f *FlounceballMatchStateIteration) Iterate(
 ) []float64 {
 	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
 	setMatchState := generateMatchStateValueSetter(stateHistories[partitionIndex])
-	// TODO: Logic for ball trajectories - needs to hit the ground and be motionless
+	// TODO: Logic for ball trajectory - some time taken to get to projected location
 	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
 	// TODO: Logic for posession air time updates when ball is in play
 	ballRadius := getMatchState("Ball Radial Position State")
 	ballAngle := getMatchState("Ball Angular Position State")
-	ballVert := getMatchState("Ball Vertical Position State")
 	for i := 1; i < 11; i++ {
 		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
 	}
