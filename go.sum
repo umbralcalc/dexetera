@@ -2,8 +2,6 @@ github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/umbralcalc/stochadex v0.0.0-20240706063524-7db9382cc832 h1:db322lbQuFCv1NYSa7V4HMtlL7YxLTW4TDqdBJQVDao=
-github.com/umbralcalc/stochadex v0.0.0-20240706063524-7db9382cc832/go.mod h1:4OFk3766NkbztvkiTA/8+fAVc3jQQ0hj6eM+66Fjp40=
 github.com/umbralcalc/stochadex v0.0.0-20240713083843-caf595919d78 h1:r4u1Zvy0us/gLZB6uG7y3taa4U2HJMJzougfiBoX4u8=
 github.com/umbralcalc/stochadex v0.0.0-20240713083843-caf595919d78/go.mod h1:4OFk3766NkbztvkiTA/8+fAVc3jQQ0hj6eM+66Fjp40=
 golang.org/x/exp v0.0.0-20240707233637-46b078467d37 h1:uLDX+AfeFCct3a2C7uIWBKMJIR3CJMhcgfrUAqjRK6w=
@@ -16,7 +14,3 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
 gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
-scientificgo.org/special v0.0.0 h1:P6WJkECo6tgtvZAEfNXl+KEB9ReAatjKAeX8U07mjSc=
-scientificgo.org/special v0.0.0/go.mod h1:LoGVh9tS431RLTJo7gFlYDKFWq44cEb7QqL+M0EKtZU=
-scientificgo.org/testutil v0.0.0 h1:y356DHRo0tAz9zIFmxlhZoKDlHPHaWW/DCm9k3PhIMA=
-scientificgo.org/testutil v0.0.0/go.mod h1:Go6R4b+9YkFocMo3H3vNQ7tjbrX9Rc12wal7NZjvPXg=

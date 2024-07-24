@@ -3,34 +3,10 @@
 package main
 
 import (
+	"github.com/umbralcalc/dexetera/pkg/examples"
 	"github.com/umbralcalc/dexetera/pkg/simio"
-	"github.com/umbralcalc/stochadex/pkg/phenomena"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
-
-	"golang.org/x/exp/rand"
-	"gonum.org/v1/gonum/stat/distuv"
 )
-
-// Planned approach:
-// - Essentially a fake car-following model for the underlying dynamics
-// of spacecraft.
-// - Use the histogram node iteraton when constructing the node
-// controller logic.
-
-// gammaJumpDistribution jumps the compound Poisson process with samples
-// drawn from a gamma distribution - this is just for testing.
-type gammaJumpDistribution struct {
-	dist *distuv.Gamma
-}
-
-func (g *gammaJumpDistribution) NewJump(
-	params *simulator.OtherParams,
-	stateElement int,
-) float64 {
-	g.dist.Alpha = params.FloatParams["gamma_alphas"][stateElement]
-	g.dist.Beta = params.FloatParams["gamma_betas"][stateElement]
-	return g.dist.Rand()
-}
 
 func main() {
 	settings := &simulator.Settings{
@@ -69,37 +45,18 @@ func main() {
 		StateHistoryDepths:    []int{2, 2, 2},
 		TimestepsHistoryDepth: 2,
 	}
-	iteration0 := &simulator.ParamValuesIteration{}
-	iteration0.Configure(0, settings)
-	iteration1 := &phenomena.CompoundPoissonProcessIteration{
-		JumpDist: &gammaJumpDistribution{
-			dist: &distuv.Gamma{
-				Alpha: 1.0,
-				Beta:  1.0,
-				Src:   rand.NewSource(settings.Seeds[1]),
-			},
-		},
-	}
-	iteration1.Configure(1, settings)
-	iteration2 := &phenomena.CompoundPoissonProcessIteration{
-		JumpDist: &gammaJumpDistribution{
-			dist: &distuv.Gamma{
-				Alpha: 1.0,
-				Beta:  1.0,
-				Src:   rand.NewSource(settings.Seeds[2]),
-			},
-		},
-	}
-	iteration2.Configure(2, settings)
 	partitions := []simulator.Partition{
-		{Iteration: iteration0},
-		{Iteration: iteration1},
+		{Iteration: &simulator.ParamValuesIteration{}},
+		{Iteration: &examples.SpacecraftFollowingLaneIteration{}},
 		{
-			Iteration: iteration2,
+			Iteration: &simulator.ConstantValuesIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"rates": 0,
 			},
 		},
+	}
+	for index, partition := range partitions {
+		partition.Iteration.Configure(index, settings)
 	}
 	implementations := &simulator.Implementations{
 		Partitions:      partitions,
