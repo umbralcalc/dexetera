@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/umbralcalc/stochadex/pkg/simulator"
@@ -20,10 +21,11 @@ var MatchStateValueIndices = map[string]int{
 	"Your Team Total Air Time":              1,
 	"Other Team Total Air Time":             2,
 	"Ball Possession Air Time":              3,
-	"Ball Radial Position State":            4,
-	"Ball Angular Position State":           5,
-	"Ball Projected Radial Position State":  6,
-	"Ball Projected Angular Position State": 7,
+	"Ball Speed State":                      4,
+	"Ball Radial Position State":            5,
+	"Ball Angular Position State":           6,
+	"Ball Projected Radial Position State":  7,
+	"Ball Projected Angular Position State": 8,
 }
 
 // PlayerStateValueIndices is a mapping which helps with describing the
@@ -31,6 +33,7 @@ var MatchStateValueIndices = map[string]int{
 var PlayerStateValueIndices = map[string]int{
 	"Radial Position State":  0,
 	"Angular Position State": 1,
+	"Ball Interaction Value": 2,
 }
 
 // generatePlayerStateValuesGetter creates a closure which reduces the
@@ -136,13 +139,39 @@ func (f *FlounceballMatchStateIteration) Iterate(
 ) []float64 {
 	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
 	setMatchState := generateMatchStateValueSetter(stateHistories[partitionIndex])
-	// TODO: Logic for ball trajectory - some time taken to get to projected location
-	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
-	// TODO: Logic for posession air time updates when ball is in play
-	ballRadius := getMatchState("Ball Radial Position State")
+	ballRadial := getMatchState("Ball Radial Position State")
 	ballAngle := getMatchState("Ball Angular Position State")
+	ballProjRadial := getMatchState("Ball Projected Radial Position State")
+	ballProjAngle := getMatchState("Ball Projected Angular Position State")
+
+	// TODO: Classify all attackers and defenders near the ball
+	// TODO: Update the ball speed state to whatever the nearest attacking players'
+	// interaction value is from parameters
 	for i := 1; i < 11; i++ {
 		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
+		setMatchState("Ball Speed State", 0.0)
 	}
+	ballSpeed := getMatchState("Ball Speed State")
+
+	// dx = r_p * cos Q_p - r * cos Q
+	// dy = r_p * sin Q_p - r * sin Q
+	// dx^2 + dy^2 = r_p^2 + r^2 - 2 * (r_p * r) * cos (Q_p - Q)
+	// x' = x + |v| * dt * dx / sqrt( dx^2 + dy^2 )
+	// y' = y + |v| * dt * dy / sqrt( dx^2 + dy^2 )
+	// r' = sqrt( (x')^2 + (y')^2 )
+	// Q' = arctan( y' / x' )
+	// Above trig is used to compute the next ball radius and angle
+	norm := math.Sqrt((ballProjRadial * ballProjRadial) + (ballRadial * ballRadial) -
+		(2.0 * (ballProjRadial * ballRadial) * math.Cos(ballProjAngle-ballAngle)))
+	newX := (ballRadial * math.Cos(ballAngle)) + (ballSpeed * timestepsHistory.NextIncrement *
+		((ballProjRadial * math.Cos(ballProjAngle)) - (ballRadial * math.Cos(ballAngle))) / norm)
+	newY := (ballRadial * math.Sin(ballAngle)) + (ballSpeed * timestepsHistory.NextIncrement *
+		((ballProjRadial * math.Sin(ballProjAngle)) - (ballRadial * math.Sin(ballAngle))) / norm)
+	setMatchState("Ball Radial Position State", math.Sqrt((newX*newX)+(newY*newY)))
+	setMatchState("Ball Angular Position State", math.Atan(newY/newX))
+
+	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
+	// TODO: Logic for posession air time updates when ball is in play
+
 	return make([]float64, 0)
 }
