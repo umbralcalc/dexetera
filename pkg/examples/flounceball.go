@@ -120,6 +120,78 @@ func generateMatchStateValueSetter(
 	}
 }
 
+// updateBallRadialAndAngle updates the radial and angular coordinates
+// of the ball in given the current and projected coordinates as well
+// as the ball speed.
+func updateBallRadialAndAngle(
+	ballRadial float64,
+	ballAngle float64,
+	ballProjRadial float64,
+	ballProjAngle float64,
+	ballSpeed float64,
+	timestep float64,
+) (float64, float64) {
+	// dx = r_p * cos Q_p - r * cos Q
+	// dy = r_p * sin Q_p - r * sin Q
+	// dx^2 + dy^2 = r_p^2 + r^2 - 2 * (r_p * r) * cos (Q_p - Q)
+	// x' = x + |v| * dt * dx / sqrt( dx^2 + dy^2 )
+	// y' = y + |v| * dt * dy / sqrt( dx^2 + dy^2 )
+	// r' = sqrt( (x')^2 + (y')^2 )
+	// Q' = arctan( y' / x' )
+	// Above trig is used to compute the next ball radius and angle
+	norm := math.Sqrt((ballProjRadial * ballProjRadial) + (ballRadial * ballRadial) -
+		(2.0 * (ballProjRadial * ballRadial) * math.Cos(ballProjAngle-ballAngle)))
+	newX := (ballRadial * math.Cos(ballAngle)) + (ballSpeed * timestep *
+		((ballProjRadial * math.Cos(ballProjAngle)) - (ballRadial * math.Cos(ballAngle))) / norm)
+	newY := (ballRadial * math.Sin(ballAngle)) + (ballSpeed * timestep *
+		((ballProjRadial * math.Sin(ballProjAngle)) - (ballRadial * math.Sin(ballAngle))) / norm)
+	return math.Sqrt((newX * newX) + (newY * newY)), math.Atan(newY / newX)
+}
+
+// Coordinates is a convenient struct to hold coordinates on the field
+// and operates on them.
+type Coordinates struct {
+	Radial  float64
+	Angular float64
+}
+
+// Update updates the radial and angular coordinates of the entity
+// given the current and projected coordinates as well as its speed.
+func (c *Coordinates) Update(
+	projCoords *Coordinates,
+	speed float64,
+	timestep float64,
+) {
+	// dx = r_p * cos Q_p - r * cos Q
+	// dy = r_p * sin Q_p - r * sin Q
+	// dx^2 + dy^2 = r_p^2 + r^2 - 2 * (r_p * r) * cos (Q_p - Q)
+	// x' = x + |v| * dt * dx / sqrt( dx^2 + dy^2 )
+	// y' = y + |v| * dt * dy / sqrt( dx^2 + dy^2 )
+	// r' = sqrt( (x')^2 + (y')^2 )
+	// Q' = arctan( y' / x' )
+	// The trig above is used to compute the next radius and angle
+	projRadial := projCoords.Radial
+	projAngle := projCoords.Angular
+	norm := math.Sqrt((projRadial * projRadial) + (c.Radial * c.Radial) -
+		(2.0 * (projRadial * c.Radial) * math.Cos(projAngle-c.Angular)))
+	newX := (c.Radial * math.Cos(c.Angular)) + (speed * timestep *
+		((projRadial * math.Cos(projAngle)) - (c.Radial * math.Cos(c.Angular))) / norm)
+	newY := (c.Radial * math.Sin(c.Angular)) + (speed * timestep *
+		((projRadial * math.Sin(projAngle)) - (c.Radial * math.Sin(c.Angular))) / norm)
+	c.Radial = math.Sqrt((newX * newX) + (newY * newY))
+	c.Angular = math.Atan(newY / newX)
+}
+
+// Proximity returns the proximity (in terms of absolute distance) of the
+// input coordinates to the entity.
+func (c *Coordinates) Proximity(otherCoords *Coordinates) float64 {
+	diffX := (c.Radial * math.Cos(c.Angular)) -
+		(otherCoords.Radial * math.Cos(otherCoords.Angular))
+	diffY := (c.Radial * math.Sin(c.Angular)) -
+		(otherCoords.Radial * math.Sin(otherCoords.Angular))
+	return math.Sqrt((diffX * diffX) + (diffY * diffY))
+}
+
 // FlounceballMatchStateIteration describes the iteration of a Flounceball
 // match state in response to player positions and manager decisions.
 type FlounceballMatchStateIteration struct {
@@ -139,36 +211,38 @@ func (f *FlounceballMatchStateIteration) Iterate(
 ) []float64 {
 	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
 	setMatchState := generateMatchStateValueSetter(stateHistories[partitionIndex])
-	ballRadial := getMatchState("Ball Radial Position State")
-	ballAngle := getMatchState("Ball Angular Position State")
-	ballProjRadial := getMatchState("Ball Projected Radial Position State")
-	ballProjAngle := getMatchState("Ball Projected Angular Position State")
+	ballCoords := &Coordinates{
+		Radial:  getMatchState("Ball Radial Position State"),
+		Angular: getMatchState("Ball Angular Position State"),
+	}
+	ballProjCoords := &Coordinates{
+		Radial:  getMatchState("Ball Projected Radial Position State"),
+		Angular: getMatchState("Ball Projected Angular Position State"),
+	}
 
 	// TODO: Classify all attackers and defenders near the ball
 	// TODO: Update the ball speed state to whatever the nearest attacking players'
 	// interaction value is from parameters
+	playerCoords := &Coordinates{}
 	for i := 1; i < 11; i++ {
 		radiusAngle := params.FloatParams["your_player_"+strconv.Itoa(i)+"_radius_angle"]
-		setMatchState("Ball Speed State", 0.0)
+		playerCoords.Radial = radiusAngle[0]
+		playerCoords.Angular = radiusAngle[1]
+		if ballCoords.Proximity(playerCoords) < 10.0 {
+			// FIXME: What happens when there is more than one???
+			setMatchState("Ball Speed State", 0.0)
+		}
 	}
 	ballSpeed := getMatchState("Ball Speed State")
 
-	// dx = r_p * cos Q_p - r * cos Q
-	// dy = r_p * sin Q_p - r * sin Q
-	// dx^2 + dy^2 = r_p^2 + r^2 - 2 * (r_p * r) * cos (Q_p - Q)
-	// x' = x + |v| * dt * dx / sqrt( dx^2 + dy^2 )
-	// y' = y + |v| * dt * dy / sqrt( dx^2 + dy^2 )
-	// r' = sqrt( (x')^2 + (y')^2 )
-	// Q' = arctan( y' / x' )
-	// Above trig is used to compute the next ball radius and angle
-	norm := math.Sqrt((ballProjRadial * ballProjRadial) + (ballRadial * ballRadial) -
-		(2.0 * (ballProjRadial * ballRadial) * math.Cos(ballProjAngle-ballAngle)))
-	newX := (ballRadial * math.Cos(ballAngle)) + (ballSpeed * timestepsHistory.NextIncrement *
-		((ballProjRadial * math.Cos(ballProjAngle)) - (ballRadial * math.Cos(ballAngle))) / norm)
-	newY := (ballRadial * math.Sin(ballAngle)) + (ballSpeed * timestepsHistory.NextIncrement *
-		((ballProjRadial * math.Sin(ballProjAngle)) - (ballRadial * math.Sin(ballAngle))) / norm)
-	setMatchState("Ball Radial Position State", math.Sqrt((newX*newX)+(newY*newY)))
-	setMatchState("Ball Angular Position State", math.Atan(newY/newX))
+	// Compute the next ball radius and angle
+	ballCoords.Update(
+		ballProjCoords,
+		ballSpeed,
+		timestepsHistory.NextIncrement,
+	)
+	setMatchState("Ball Radial Position State", ballCoords.Radial)
+	setMatchState("Ball Angular Position State", ballCoords.Angular)
 
 	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
 	// TODO: Logic for posession air time updates when ball is in play
