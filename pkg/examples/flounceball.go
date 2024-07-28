@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"github.com/umbralcalc/stochadex/pkg/simulator"
+	"golang.org/x/exp/rand"
+	"gonum.org/v1/gonum/stat/distuv"
 )
 
 // PitchRadiusMetres is the radius of the circular pitch.
@@ -35,9 +37,10 @@ var MatchStateValueIndices = map[string]int{
 // PlayerStateValueIndices is a mapping which helps with describing the
 // meaning of the values for each player state index.
 var PlayerStateValueIndices = map[string]int{
-	"Radial Position State":  0,
-	"Angular Position State": 1,
-	"Ball Interaction Value": 2,
+	"Radial Position State":       0,
+	"Angular Position State":      1,
+	"Ball Interaction Speed":      2,
+	"Ball Interaction Inaccuracy": 3,
 }
 
 // OutputState is a simple container for referencing states on output.
@@ -75,6 +78,15 @@ func (c *Coordinates) Update(
 		((projRadial * math.Cos(projAngle)) - (c.Radial * math.Cos(c.Angular))) / norm)
 	newY := (c.Radial * math.Sin(c.Angular)) + (speed * timestep *
 		((projRadial * math.Sin(projAngle)) - (c.Radial * math.Sin(c.Angular))) / norm)
+	c.Radial = math.Sqrt((newX * newX) + (newY * newY))
+	c.Angular = math.Atan(newY / newX)
+}
+
+// ApplyShift applies a cartesian coordinate shift to the radial and
+// angular position.
+func (c *Coordinates) ApplyShift(xDiff float64, yDiff float64) {
+	newX := (c.Radial * math.Cos(c.Angular)) + xDiff
+	newY := (c.Radial * math.Sin(c.Angular)) + yDiff
 	c.Radial = math.Sqrt((newX * newX) + (newY * newY))
 	c.Angular = math.Atan(newY / newX)
 }
@@ -217,12 +229,18 @@ func generateMatchStateValueSetter(
 // FlounceballMatchStateIteration describes the iteration of a Flounceball
 // match state in response to player positions and manager decisions.
 type FlounceballMatchStateIteration struct {
+	normDist *distuv.Normal
 }
 
 func (f *FlounceballMatchStateIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
+	f.normDist = &distuv.Normal{
+		Mu:    0.0,
+		Sigma: 1.0,
+		Src:   rand.NewSource(settings.Seeds[partitionIndex]),
+	}
 }
 
 func (f *FlounceballMatchStateIteration) Iterate(
@@ -247,20 +265,30 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		possession: int(getMatchState("Possession State")),
 	}
 
-	// TODO: Classify all attackers and defenders near the ball
-	// TODO: Update the ball speed state to whatever the nearest attacking players'
-	// interaction value is from parameters
+	// TODO: Use the attacking team tactics and basic heuristics to set the
+	// initial intended ball projected position states
+
+	// Apply the attacking player ball interaction logic
 	attackPlayerCoords := &Coordinates{}
 	for i := 1; i < 11; i++ {
-		radiusAngle := params.FloatParams[posMatcher.Attacking(
-			"your_player_"+strconv.Itoa(i)+"_radius_angle",
-			"other_player_"+strconv.Itoa(i)+"_radius_angle",
+		attackState := params.FloatParams[posMatcher.Attacking(
+			"your_player_"+strconv.Itoa(i)+"_state",
+			"other_player_"+strconv.Itoa(i)+"_state",
 		)]
-		attackPlayerCoords.Radial = radiusAngle[0]
-		attackPlayerCoords.Angular = radiusAngle[1]
+		attackPlayerCoords.Radial =
+			attackState[PlayerStateValueIndices["Radial Position State"]]
+		attackPlayerCoords.Angular =
+			attackState[PlayerStateValueIndices["Angular Position State"]]
 		if ballCoords.Proximity(attackPlayerCoords) <= InteractionRadiusMetres {
-			// FIXME: What happens when there is more than one???
-			setMatchState("Ball Speed State", 0.0)
+			// Add noise to the projected ball location based on player accuracy
+			f.normDist.Sigma =
+				attackState[PlayerStateValueIndices["Ball Interaction Accuracy"]]
+			ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
+			// Add speed to the ball based on player ball interaction speed
+			setMatchState(
+				"Ball Speed State",
+				attackState[PlayerStateValueIndices["Ball Interaction Speed"]],
+			)
 		}
 	}
 	ballSpeed := getMatchState("Ball Speed State")
