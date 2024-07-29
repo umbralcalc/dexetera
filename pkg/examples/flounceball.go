@@ -16,6 +16,11 @@ const PitchRadiusMetres = 100.0
 // allowed for them to interact.
 const InteractionRadiusMetres = 1.0
 
+// MaxBallFallingLifetime is the maximum time a ball is assumed to be in
+// still airborne when it reaches within the InteractionRadiusMetres of
+// its projected location and no player has yet interacted with it.
+const MaxBallFallingLifetime = 1.0
+
 // PossessionValueMap is a mapping to check which team is in possession
 // based on the value of the possession state index.
 var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
@@ -32,6 +37,7 @@ var MatchStateValueIndices = map[string]int{
 	"Ball Angular Position State":           6,
 	"Ball Projected Radial Position State":  7,
 	"Ball Projected Angular Position State": 8,
+	"Ball Cumulative Falling Time":          9,
 }
 
 // PlayerStateValueIndices is a mapping which helps with describing the
@@ -266,43 +272,71 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	}
 
 	// TODO: Use the attacking team tactics and basic heuristics to set the
-	// initial intended ball projected position states
+	// initial intended ball projected position states.
+	// Heuristics can be built from:
+	// - the average proximity of defending players to the projected location
+	// - the average proximity of attacking players to the projected location
+	// - the total distance to the projected location
 
-	// Apply the attacking player ball interaction logic
-	attackPlayerCoords := &Coordinates{}
-	for i := 1; i < 11; i++ {
-		attackState := params.FloatParams[posMatcher.Attacking(
-			"your_player_"+strconv.Itoa(i)+"_state",
-			"other_player_"+strconv.Itoa(i)+"_state",
-		)]
-		attackPlayerCoords.Radial =
-			attackState[PlayerStateValueIndices["Radial Position State"]]
-		attackPlayerCoords.Angular =
-			attackState[PlayerStateValueIndices["Angular Position State"]]
-		if ballCoords.Proximity(attackPlayerCoords) <= InteractionRadiusMetres {
-			// Add noise to the projected ball location based on player accuracy
-			f.normDist.Sigma =
-				attackState[PlayerStateValueIndices["Ball Interaction Accuracy"]]
-			ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
-			// Add speed to the ball based on player ball interaction speed
-			setMatchState(
-				"Ball Speed State",
-				attackState[PlayerStateValueIndices["Ball Interaction Speed"]],
-			)
+	// Apply the player ball interaction logic once the ball is within the interaction
+	// radius of the projected location
+	if ballCoords.Proximity(ballProjCoords) <= InteractionRadiusMetres {
+		playerCoords := &Coordinates{}
+		for i := 1; i < 11; i++ {
+			// For the attacking players
+			attackState := params.FloatParams[posMatcher.Attacking(
+				"your_player_"+strconv.Itoa(i)+"_state",
+				"other_player_"+strconv.Itoa(i)+"_state",
+			)]
+			playerCoords.Radial =
+				attackState[PlayerStateValueIndices["Radial Position State"]]
+			playerCoords.Angular =
+				attackState[PlayerStateValueIndices["Angular Position State"]]
+			if ballCoords.Proximity(playerCoords) <= InteractionRadiusMetres {
+				// Add noise to the projected ball location based on player inaccuracy
+				// - good attackers have lower inaccuracy
+				f.normDist.Sigma =
+					attackState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]]
+				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
+				// Add speed to the ball based on player ball interaction speed
+				setMatchState(
+					"Ball Speed State",
+					attackState[PlayerStateValueIndices["Ball Interaction Speed"]],
+				)
+			}
+			// For the defending players
+			defendState := params.FloatParams[posMatcher.Defending(
+				"your_player_"+strconv.Itoa(i)+"_state",
+				"other_player_"+strconv.Itoa(i)+"_state",
+			)]
+			playerCoords.Radial =
+				defendState[PlayerStateValueIndices["Radial Position State"]]
+			playerCoords.Angular =
+				defendState[PlayerStateValueIndices["Angular Position State"]]
+			if ballCoords.Proximity(playerCoords) <= InteractionRadiusMetres {
+				// Add noise to the projected ball location based on player accuracy
+				// - good defenders have higher inaccuracy
+				f.normDist.Sigma =
+					defendState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]]
+				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
+			}
 		}
 	}
-	ballSpeed := getMatchState("Ball Speed State")
 
 	// Compute the next ball radius and angle
 	ballCoords.Update(
 		ballProjCoords,
-		ballSpeed,
+		getMatchState("Ball Speed State"),
 		timestepsHistory.NextIncrement,
 	)
 	setMatchState("Ball Radial Position State", ballCoords.Radial)
 	setMatchState("Ball Angular Position State", ballCoords.Angular)
 
 	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
+	// - out of play is easy logic but hitting the ground could be hard so simple logic is to say the
+	// ball has a 'MaxBallFallingLifetime' when it reaches the interaction radius of the projected
+	// location which gets reset when a player interacts with it
+
 	// TODO: Logic for posession air time updates when ball is in play
 
 	return outputState.Values
