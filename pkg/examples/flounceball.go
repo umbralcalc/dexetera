@@ -107,6 +107,24 @@ func (c *Coordinates) Proximity(otherCoords *Coordinates) float64 {
 	return math.Sqrt((diffX * diffX) + (diffY * diffY))
 }
 
+// MinProximity finds the minimum proximity value to this Coordinates struct
+// among the slice of other Coordinates structs provided.
+func (c *Coordinates) MinProximity(otherCoords []*Coordinates) (int, float64) {
+	outputIndex := 0
+	outputProx := c.Proximity(otherCoords[0])
+	for i, coords := range otherCoords {
+		if i == 0 {
+			continue
+		}
+		prox := c.Proximity(coords)
+		if prox < outputProx {
+			outputProx = prox
+			outputIndex = i
+		}
+	}
+	return outputIndex, outputProx
+}
+
 // PossessionNameMatcher helps to ensure that the right team names are used
 // when referring to data about attack or defence.
 type PossessionNameMatcher struct {
@@ -150,16 +168,30 @@ func (p *PossessionNameMatcher) Defending(
 func generatePlayerStateValuesGetter(
 	playerPartitionIndices []int64,
 	stateHistories []*simulator.StateHistory,
-) func(key string) []float64 {
-	return func(key string) []float64 {
-		values := make([]float64, 0)
+) func(keys []string) [][]float64 {
+	return func(keys []string) [][]float64 {
+		values := make([][]float64, 0)
 		for _, index := range playerPartitionIndices {
-			values = append(
-				values,
-				stateHistories[index].Values.At(0, PlayerStateValueIndices[key]),
-			)
+			valuesVec := make([]float64, 0)
+			for _, key := range keys {
+				valuesVec = append(
+					valuesVec,
+					stateHistories[index].Values.At(0, PlayerStateValueIndices[key]),
+				)
+			}
+			values = append(values, valuesVec)
 		}
 		return values
+	}
+}
+
+// generatePlayerStateValueGetter creates a closure which reduces the
+// amount of code required to retrieve state values for a player.
+func generatePlayerStateValueGetter(
+	stateHistory *simulator.StateHistory,
+) func(key string) float64 {
+	return func(key string) float64 {
+		return stateHistory.Values.At(0, PlayerStateValueIndices[key])
 	}
 }
 
@@ -176,12 +208,18 @@ func generatePlayerStateValueSetter(
 // FlounceballPlayerStateIteration describes the iteration of an individual
 // player state in a Flounceball match.
 type FlounceballPlayerStateIteration struct {
+	uniformDist *distuv.Uniform
 }
 
 func (f *FlounceballPlayerStateIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
+	f.uniformDist = &distuv.Uniform{
+		Min: 0.0,
+		Max: 1.0,
+		Src: rand.NewSource(settings.Seeds[partitionIndex]),
+	}
 }
 
 func (f *FlounceballPlayerStateIteration) Iterate(
@@ -191,24 +229,65 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
 	// Reorganise state data and specify getters and setters for convenience.
-	getMatchState := generateMatchStateValueGetter(
-		stateHistories[params.IntParams["match_partition_index"][0]],
-	)
-	getYourPlayerStates := generatePlayerStateValuesGetter(
-		params.IntParams["your_player_partition_indices"],
-		stateHistories,
-	)
-	getOtherPlayerStates := generatePlayerStateValuesGetter(
-		params.IntParams["other_player_partition_indices"],
-		stateHistories,
-	)
 	outputState := &OutputState{Values: make([]float64, len(PlayerStateValueIndices))}
 	setThisPlayerState := generatePlayerStateValueSetter(outputState)
+	getThisPlayerState := generatePlayerStateValueGetter(stateHistories[partitionIndex])
+	playerCoords := &Coordinates{
+		Radial:  getThisPlayerState("Radial Position State"),
+		Angular: getThisPlayerState("Angular Position State"),
+	}
+	getOppositionPlayerStates := generatePlayerStateValuesGetter(
+		params.IntParams["opposition_player_partition_indices"],
+		stateHistories,
+	)
+	oppositionPlayerCoords := make([]*Coordinates, 0)
+	for _, values := range getOppositionPlayerStates([]string{
+		"Radial Position State",
+		"Angular Position State",
+	}) {
+		oppositionPlayerCoords = append(
+			oppositionPlayerCoords,
+			&Coordinates{
+				Radial:  values[0],
+				Angular: values[1],
+			},
+		)
+	}
 
-	// TODO: Logic for attacking player disruptions from defensive players - limits accuracy
-	// TODO: Logic for attacking player attempted trajectory choice and noise on this
-	// TODO: Logic for team positioning tactics when in possession and not in possession
-	// TODO: ...which can depend on the ball location, projected ball location and other players
+	// Logic for player substitutions which will change these values
+	spaceFindingTalent := int(params.IntParams["player_space_finding_talent"][0])
+	setThisPlayerState(
+		"Ball Interaction Speed",
+		params.FloatParams["player_ball_interaction_speed"][0],
+	)
+	setThisPlayerState(
+		"Ball Interaction Inaccuracy",
+		params.FloatParams["player_ball_interaction_inaccuracy"][0],
+	)
+
+	// TODO: Below is movement for attack but need to handle movement for defence
+
+	// Logic for player movement and positioning when in possession
+	_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
+	coordsOption := playerCoords
+	plannedPlayerCoords := playerCoords
+	for i := 0; i < spaceFindingTalent; i++ {
+		coordsOption.Radial = f.uniformDist.Rand()
+		coordsOption.Angular = f.uniformDist.Rand()
+		_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
+		if prox > bestProx {
+			plannedPlayerCoords.Radial = coordsOption.Radial
+			plannedPlayerCoords.Angular = coordsOption.Angular
+		}
+	}
+	playerCoords.Update(
+		plannedPlayerCoords,
+		params.FloatParams["player_movement_speed"][0],
+		timestepsHistory.NextIncrement,
+	)
+	setThisPlayerState("Radial Position State", playerCoords.Radial)
+	setThisPlayerState("Angular Position State", playerCoords.Angular)
+
 	return outputState.Values
 }
 
