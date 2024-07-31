@@ -247,10 +247,7 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	}) {
 		oppositionPlayerCoords = append(
 			oppositionPlayerCoords,
-			&Coordinates{
-				Radial:  values[0],
-				Angular: values[1],
-			},
+			&Coordinates{Radial: values[0], Angular: values[1]},
 		)
 	}
 
