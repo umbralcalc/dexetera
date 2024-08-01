@@ -14,7 +14,17 @@ import (
 // - Use the histogram node iteraton when constructing the node
 // controller logic.
 
-// InverseGaussianSampler
+// SpacecraftLaneCountStateValueIndices is a mapping which helps with
+// describing the meaning of the values for each spacecraft lane count
+// state index.
+var SpacecraftLaneCountStateValueIndices = map[string]int{
+	"Upstream Entry Detection":            0,
+	"Downstream Exit Detection":           1,
+	"Downstream Queue Size":               2,
+	"Latest Upstream Entry Time In Queue": 3,
+}
+
+// InverseGaussianSampler - TODO: probably needs to actually be a CDF
 type InverseGaussianSampler struct {
 	Mu              float64
 	Lambda          float64
@@ -57,21 +67,30 @@ func NewInverseGaussianSampler(
 	}
 }
 
-// SpacecraftFollowingLaneIteration
-type SpacecraftFollowingLaneIteration struct {
+// SpacecraftLaneCountIteration
+type SpacecraftLaneCountIteration struct {
+	invGaussSampler *InverseGaussianSampler
 }
 
-func (s *SpacecraftFollowingLaneIteration) Configure(
+func (s *SpacecraftLaneCountIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
+	s.invGaussSampler = NewInverseGaussianSampler(
+		0.0,
+		1.0,
+		settings.Seeds[partitionIndex],
+	)
 }
 
-func (s *SpacecraftFollowingLaneIteration) Iterate(
+func (s *SpacecraftLaneCountIteration) Iterate(
 	params *simulator.OtherParams,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
+	// TODO: get lane length parameter
+	// TODO: get spacecraft lane speed parameter
+	// TODO: use this parameters to set the Mu and Lambda
 	return make([]float64, 0)
 }

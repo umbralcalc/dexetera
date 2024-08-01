@@ -14,7 +14,7 @@ func TestHyperspacetc(t *testing.T) {
 				"hyperspacetc_settings.yaml",
 			)
 			partitions := make([]simulator.Partition, 0)
-			rateIteration := &SpacecraftFollowingLaneIteration{}
+			rateIteration := &SpacecraftLaneCountIteration{}
 			rateIteration.Configure(0, settings)
 			partitions = append(partitions, simulator.Partition{Iteration: rateIteration})
 			implementations := &simulator.Implementations{
