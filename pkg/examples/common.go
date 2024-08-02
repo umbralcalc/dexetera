@@ -2,19 +2,15 @@ package examples
 
 import "github.com/umbralcalc/stochadex/pkg/simulator"
 
-// OutputState is a simple container for referencing states on output.
-type OutputState struct {
-	Values []float64
-}
-
 // GenerateStateValueGetter creates a closure which tidies up the
-// code required to retrieve state values.
+// code required to retrieve state values from a single time index in
+// the history of a partition.
 func GenerateStateValueGetter(
 	stateValueIndicesMap map[string]int,
 	stateHistory *simulator.StateHistory,
-) func(key string) float64 {
-	return func(key string) float64 {
-		return stateHistory.Values.At(0, stateValueIndicesMap[key])
+) func(key string, timeIndex int) float64 {
+	return func(key string, timeIndex int) float64 {
+		return stateHistory.Values.At(timeIndex, stateValueIndicesMap[key])
 	}
 }
 
@@ -22,27 +18,28 @@ func GenerateStateValueGetter(
 // code required to reassign state values.
 func GenerateStateValueSetter(
 	stateValueIndicesMap map[string]int,
-	state *OutputState,
+	outputState []float64,
 ) func(key string, value float64) {
 	return func(key string, value float64) {
-		state.Values[stateValueIndicesMap[key]] = value
+		outputState[stateValueIndicesMap[key]] = value
 	}
 }
 
 // GenerateMultiStateValuesGetter creates a closure which tidies up
-// the code required to retrieve state values for multiple partitions.
+// the code required to retrieve state values from a single time index
+// in the history of multiple partitions.
 func GenerateMultiStateValuesGetter(
 	stateValueIndicesMap map[string]int,
 	stateHistories []*simulator.StateHistory,
-) func(partitionIndices []int64, keys []string) [][]float64 {
-	return func(partitionIndices []int64, keys []string) [][]float64 {
+) func(keys []string, partitionIndices []int64, timeIndex int) [][]float64 {
+	return func(keys []string, partitionIndices []int64, timeIndex int) [][]float64 {
 		values := make([][]float64, 0)
 		for _, index := range partitionIndices {
 			valuesVec := make([]float64, 0)
 			for _, key := range keys {
 				valuesVec = append(
 					valuesVec,
-					stateHistories[index].Values.At(0, stateValueIndicesMap[key]),
+					stateHistories[index].Values.At(timeIndex, stateValueIndicesMap[key]),
 				)
 			}
 			values = append(values, valuesVec)

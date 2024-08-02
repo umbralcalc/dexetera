@@ -15,10 +15,10 @@ import (
 // LaneCountSateValueIndices is a mapping which helps with describing
 // the meaning of the values for each spacecraft lane count state index.
 var LaneCountStateValueIndices = map[string]int{
-	"Upstream Entry Detection":            0,
-	"Downstream Exit Detection":           1,
-	"Downstream Queue Size":               2,
-	"Latest Upstream Entry Time In Queue": 3,
+	"Upstream Entry Detection":               0,
+	"Downstream Exit Detection":              1,
+	"Downstream Queue Size":                  2,
+	"Min Upstream Entry Time Index In Queue": 3,
 }
 
 // standardNormalCdf returns the CDF value for a standard normal distribution.
@@ -45,7 +45,7 @@ func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
 
 // SpacecraftLaneCountIteration
 type SpacecraftLaneCountIteration struct {
-	GetLaneState func(key string) float64
+	GetLaneState func(key string, timeIndex int) float64
 	uniformDist  *distuv.Uniform
 }
 
@@ -67,7 +67,7 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
 	// Create a state setter for convenience.
-	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
+	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
 	setState := GenerateStateValueSetter(LaneCountStateValueIndices, outputState)
 
 	// TODO: get lane length parameter
@@ -78,16 +78,25 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	craftSpeedVariance := 0.0
 	craftLength := 0.0
 
-	// has the craft reached the end of the queue?
-	queueSize := s.GetLaneState("Downstream Queue Size")
-	effectiveLaneLength := laneLength - (craftLength * queueSize)
-	if s.uniformDist.Rand() < inverseGaussianCdf(
-		timeSinceEntry,
-		muFromParams(effectiveLaneLength, craftSpeed),
-		lambdaFromParams(effectiveLaneLength, craftSpeedVariance),
-	) {
-		// if so, then update the lane count state accordingly
-		setState("Downstream Queue Size", queueSize+1)
+	// assume no overtaking for this simple model
+	minEntryTimeIndex := int(s.GetLaneState("Min Upstream Entry Time Index In Queue", 0))
+	for i := minEntryTimeIndex - 1; i >= 1; i-- {
+		if s.GetLaneState("Upstream Entry Detection", i) > 0.0 {
+			// has the craft reached the end of the queue?
+			queueSize := s.GetLaneState("Downstream Queue Size", i)
+			effectiveLaneLength := laneLength - (craftLength * queueSize)
+			if s.uniformDist.Rand() < inverseGaussianCdf(
+				timeSinceEntry,
+				muFromParams(effectiveLaneLength, craftSpeed),
+				lambdaFromParams(effectiveLaneLength, craftSpeedVariance),
+			) {
+				// if so, then update the lane count state accordingly
+				setState("Downstream Queue Size", queueSize+1)
+				break
+			}
+		}
+		i += 1
 	}
-	return outputState.Values
+
+	return outputState
 }
