@@ -9,8 +9,6 @@ import (
 )
 
 // Planned approach:
-// - Essentially a fake car-following model for the underlying dynamics
-// of spacecraft.
 // - Use the histogram node iteraton when constructing the node
 // controller logic.
 
@@ -45,29 +43,10 @@ func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
 	return laneLength * laneLength / speedVariance
 }
 
-// generateLaneCountStateValueGetter creates a closure which reduces the
-// amount of code required to retrieve state values.
-func generateLaneCountStateValueGetter(
-	stateHistory *simulator.StateHistory,
-) func(key string) float64 {
-	return func(key string) float64 {
-		return stateHistory.Values.At(0, LaneCountStateValueIndices[key])
-	}
-}
-
-// generateLaneCountStateValueSetter creates a closure which reduces the
-// amount of code required to reassign state values.
-func generateLaneCountStateValueSetter(
-	state *OutputState,
-) func(key string, value float64) {
-	return func(key string, value float64) {
-		state.Values[LaneCountStateValueIndices[key]] = value
-	}
-}
-
 // SpacecraftLaneCountIteration
 type SpacecraftLaneCountIteration struct {
-	uniformDist *distuv.Uniform
+	GetLaneState func(key string) float64
+	uniformDist  *distuv.Uniform
 }
 
 func (s *SpacecraftLaneCountIteration) Configure(
@@ -87,10 +66,9 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data and specify getters and setters for convenience.
-	getState := generateLaneCountStateValueGetter(stateHistories[partitionIndex])
-	outputState := &OutputState{Values: make([]float64, len(MatchStateValueIndices))}
-	setState := generateLaneCountStateValueSetter(outputState)
+	// Create a state setter for convenience.
+	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
+	setState := GenerateStateValueSetter(LaneCountStateValueIndices, outputState)
 
 	// TODO: get lane length parameter
 	// TODO: get spacecraft lane speed parameter
@@ -101,7 +79,7 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	craftLength := 0.0
 
 	// has the craft reached the end of the queue?
-	queueSize := getState("Downstream Queue Size")
+	queueSize := s.GetLaneState("Downstream Queue Size")
 	effectiveLaneLength := laneLength - (craftLength * queueSize)
 	if s.uniformDist.Rand() < inverseGaussianCdf(
 		timeSinceEntry,

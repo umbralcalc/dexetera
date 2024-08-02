@@ -158,52 +158,12 @@ func (p *PossessionNameMatcher) Defending(
 	}
 }
 
-// generatePlayerStateValuesGetter creates a closure which reduces the
-// amount of code required to retrieve state values for all players.
-func generatePlayerStateValuesGetter(
-	playerPartitionIndices []int64,
-	stateHistories []*simulator.StateHistory,
-) func(keys []string) [][]float64 {
-	return func(keys []string) [][]float64 {
-		values := make([][]float64, 0)
-		for _, index := range playerPartitionIndices {
-			valuesVec := make([]float64, 0)
-			for _, key := range keys {
-				valuesVec = append(
-					valuesVec,
-					stateHistories[index].Values.At(0, PlayerStateValueIndices[key]),
-				)
-			}
-			values = append(values, valuesVec)
-		}
-		return values
-	}
-}
-
-// generatePlayerStateValueGetter creates a closure which reduces the
-// amount of code required to retrieve state values for a player.
-func generatePlayerStateValueGetter(
-	stateHistory *simulator.StateHistory,
-) func(key string) float64 {
-	return func(key string) float64 {
-		return stateHistory.Values.At(0, PlayerStateValueIndices[key])
-	}
-}
-
-// generatePlayerStateValueSetter creates a closure which reduces the
-// amount of code required to reassign state values for a player.
-func generatePlayerStateValueSetter(
-	state *OutputState,
-) func(key string, value float64) {
-	return func(key string, value float64) {
-		state.Values[PlayerStateValueIndices[key]] = value
-	}
-}
-
 // FlounceballPlayerStateIteration describes the iteration of an individual
 // player state in a Flounceball match.
 type FlounceballPlayerStateIteration struct {
-	uniformDist *distuv.Uniform
+	GetThisPlayerState   func(key string) float64
+	GetMultiPlayerStates func(partitionIndices []int64, keys []string) [][]float64
+	uniformDist          *distuv.Uniform
 }
 
 func (f *FlounceballPlayerStateIteration) Configure(
@@ -223,23 +183,20 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data and specify getters and setters for convenience.
-	outputState := &OutputState{Values: make([]float64, len(PlayerStateValueIndices))}
-	setThisPlayerState := generatePlayerStateValueSetter(outputState)
-	getThisPlayerState := generatePlayerStateValueGetter(stateHistories[partitionIndex])
+	// Reorganise state data and create a state setter for convenience.
+	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
+	setThisPlayerState := GenerateStateValueSetter(PlayerStateValueIndices, outputState)
 	playerCoords := &Coordinates{
-		Radial:  getThisPlayerState("Radial Position State"),
-		Angular: getThisPlayerState("Angular Position State"),
+		Radial:  f.GetThisPlayerState("Radial Position State"),
+		Angular: f.GetThisPlayerState("Angular Position State"),
 	}
-	getOppositionPlayerStates := generatePlayerStateValuesGetter(
-		params.IntParams["opposition_player_partition_indices"],
-		stateHistories,
-	)
 	oppositionPlayerCoords := make([]*Coordinates, 0)
-	for _, values := range getOppositionPlayerStates([]string{
-		"Radial Position State",
-		"Angular Position State",
-	}) {
+	for _, values := range f.GetMultiPlayerStates(
+		params.IntParams["opposition_player_partition_indices"],
+		[]string{
+			"Radial Position State",
+			"Angular Position State",
+		}) {
 		oppositionPlayerCoords = append(
 			oppositionPlayerCoords,
 			&Coordinates{Radial: values[0], Angular: values[1]},
@@ -283,30 +240,11 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	return outputState.Values
 }
 
-// generateMatchStateValueGetter creates a closure which reduces the
-// amount of code required to retrieve state values.
-func generateMatchStateValueGetter(
-	stateHistory *simulator.StateHistory,
-) func(key string) float64 {
-	return func(key string) float64 {
-		return stateHistory.Values.At(0, MatchStateValueIndices[key])
-	}
-}
-
-// generateMatchStateValueSetter creates a closure which reduces the
-// amount of code required to reassign state values.
-func generateMatchStateValueSetter(
-	state *OutputState,
-) func(key string, value float64) {
-	return func(key string, value float64) {
-		state.Values[MatchStateValueIndices[key]] = value
-	}
-}
-
 // FlounceballMatchStateIteration describes the iteration of a Flounceball
 // match state in response to player positions and manager decisions.
 type FlounceballMatchStateIteration struct {
-	normDist *distuv.Normal
+	GetMatchState func(key string) float64
+	normDist      *distuv.Normal
 }
 
 func (f *FlounceballMatchStateIteration) Configure(
@@ -326,20 +264,19 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data and specify getters and setters for convenience.
-	getMatchState := generateMatchStateValueGetter(stateHistories[partitionIndex])
-	outputState := &OutputState{Values: make([]float64, len(MatchStateValueIndices))}
-	setMatchState := generateMatchStateValueSetter(outputState)
+	// Reorganise state data and create a state setter for convenience.
+	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
+	setMatchState := GenerateStateValueSetter(MatchStateValueIndices, outputState)
 	ballCoords := &Coordinates{
-		Radial:  getMatchState("Ball Radial Position State"),
-		Angular: getMatchState("Ball Angular Position State"),
+		Radial:  f.GetMatchState("Ball Radial Position State"),
+		Angular: f.GetMatchState("Ball Angular Position State"),
 	}
 	ballProjCoords := &Coordinates{
-		Radial:  getMatchState("Ball Projected Radial Position State"),
-		Angular: getMatchState("Ball Projected Angular Position State"),
+		Radial:  f.GetMatchState("Ball Projected Radial Position State"),
+		Angular: f.GetMatchState("Ball Projected Angular Position State"),
 	}
 	posMatcher := &PossessionNameMatcher{
-		possession: int(getMatchState("Possession State")),
+		possession: int(f.GetMatchState("Possession State")),
 	}
 
 	// TODO: Use the attacking team tactics and basic heuristics to set the
@@ -397,7 +334,7 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	// Compute the next ball radius and angle
 	ballCoords.Update(
 		ballProjCoords,
-		getMatchState("Ball Speed State"),
+		f.GetMatchState("Ball Speed State"),
 		timestepsHistory.NextIncrement,
 	)
 	setMatchState("Ball Radial Position State", ballCoords.Radial)
