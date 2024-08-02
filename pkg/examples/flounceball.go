@@ -49,11 +49,6 @@ var PlayerStateValueIndices = map[string]int{
 	"Ball Interaction Inaccuracy": 3,
 }
 
-// OutputState is a simple container for referencing states on output.
-type OutputState struct {
-	Values []float64
-}
-
 // Coordinates is a convenient struct to hold coordinates on the field
 // and operates on them.
 type Coordinates struct {
