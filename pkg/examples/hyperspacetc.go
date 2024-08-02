@@ -60,43 +60,59 @@ func (s *SpacecraftLaneCountIteration) Configure(
 	}
 }
 
+func (s *SpacecraftLaneCountIteration) arrivals(
+	setState func(key string, value float64),
+	params *simulator.OtherParams,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) {
+	minEntryTimeIndex := int(s.GetLaneState("Min Upstream Entry Time Index In Queue", 0))
+	for i := minEntryTimeIndex - 1; i >= 1; i-- {
+		if s.GetLaneState("Upstream Entry Detection", i) > 0.0 {
+			queueSize := s.GetLaneState("Downstream Queue Size", i)
+			effectiveLaneLength := params.FloatParams["lane_length"][0] -
+				(params.FloatParams["spacecraft_length"][0] * queueSize)
+			timeSinceEntry := timestepsHistory.NextIncrement +
+				timestepsHistory.Values.AtVec(0) - timestepsHistory.Values.AtVec(i)
+			// This probabilistic sample draw answers the question: has the craft
+			// reached the back of the queue?
+			if s.uniformDist.Rand() < inverseGaussianCdf(
+				timeSinceEntry,
+				muFromParams(
+					effectiveLaneLength,
+					params.FloatParams["spacecraft_speed"][0],
+				),
+				lambdaFromParams(
+					effectiveLaneLength,
+					params.FloatParams["spacecraft_speed_variance"][0],
+				),
+			) {
+				// If it has, then update the state values accordingly
+				setState("Downstream Queue Size", queueSize+1)
+				setState("Min Upstream Entry Time Index In Queue", float64(i))
+				break
+			}
+		}
+		i += 1
+	}
+}
+
 func (s *SpacecraftLaneCountIteration) Iterate(
 	params *simulator.OtherParams,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Create a state setter for convenience.
-	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
+	// Create a state setter for convenience
+	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
 	setState := GenerateStateValueSetter(LaneCountStateValueIndices, outputState)
 
-	// TODO: get lane length parameter
-	// TODO: get spacecraft lane speed parameter
-	timeSinceEntry := 0.0
-	laneLength := 0.0
-	craftSpeed := 0.0
-	craftSpeedVariance := 0.0
-	craftLength := 0.0
+	// TODO: Deal with the upstream entries into the lane from a node
 
-	// assume no overtaking for this simple model
-	minEntryTimeIndex := int(s.GetLaneState("Min Upstream Entry Time Index In Queue", 0))
-	for i := minEntryTimeIndex - 1; i >= 1; i-- {
-		if s.GetLaneState("Upstream Entry Detection", i) > 0.0 {
-			// has the craft reached the end of the queue?
-			queueSize := s.GetLaneState("Downstream Queue Size", i)
-			effectiveLaneLength := laneLength - (craftLength * queueSize)
-			if s.uniformDist.Rand() < inverseGaussianCdf(
-				timeSinceEntry,
-				muFromParams(effectiveLaneLength, craftSpeed),
-				lambdaFromParams(effectiveLaneLength, craftSpeedVariance),
-			) {
-				// if so, then update the lane count state accordingly
-				setState("Downstream Queue Size", queueSize+1)
-				break
-			}
-		}
-		i += 1
-	}
+	// Deal with upstream arrivals into the queue, assuming no overtaking
+	// is allowed in this simple model
+	s.arrivals(setState, params, timestepsHistory)
 
-	return outputState
+	// TODO: Deal with the downstream departures from the queue into a node
+
+	return outputState.Values
 }

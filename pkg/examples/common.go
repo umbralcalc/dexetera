@@ -2,6 +2,11 @@ package examples
 
 import "github.com/umbralcalc/stochadex/pkg/simulator"
 
+// OutputState is a simple container for referencing states on output.
+type OutputState struct {
+	Values []float64
+}
+
 // GenerateStateValueGetter creates a closure which tidies up the
 // code required to retrieve state values from a single time index in
 // the history of a partition.
@@ -18,10 +23,10 @@ func GenerateStateValueGetter(
 // code required to reassign state values.
 func GenerateStateValueSetter(
 	stateValueIndicesMap map[string]int,
-	outputState []float64,
+	outputState *OutputState,
 ) func(key string, value float64) {
 	return func(key string, value float64) {
-		outputState[stateValueIndicesMap[key]] = value
+		outputState.Values[stateValueIndicesMap[key]] = value
 	}
 }
 
