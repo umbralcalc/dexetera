@@ -45,8 +45,13 @@ func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
 
 // SpacecraftLaneCountIteration
 type SpacecraftLaneCountIteration struct {
-	GetLaneState func(key string, timeIndex int) float64
-	uniformDist  *distuv.Uniform
+	GetState func(
+		key string,
+		timeIndex int,
+		stateHistory *simulator.StateHistory,
+	) float64
+	SetState    func(key string, value float64, outputState []float64)
+	uniformDist *distuv.Uniform
 }
 
 func (s *SpacecraftLaneCountIteration) Configure(
@@ -61,34 +66,33 @@ func (s *SpacecraftLaneCountIteration) Configure(
 }
 
 func (s *SpacecraftLaneCountIteration) arrivals(
-	setState func(key string, value float64),
-	params *simulator.OtherParams,
+	outputState []float64,
+	params simulator.Params,
+	laneStateHistory *simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) {
-	minEntryTimeIndex := int(s.GetLaneState("Min Upstream Entry Time Index In Queue", 0))
+	minEntryTimeIndex := int(s.GetState(
+		"Min Upstream Entry Time Index In Queue",
+		0,
+		laneStateHistory,
+	))
 	for i := minEntryTimeIndex - 1; i >= 1; i-- {
-		if s.GetLaneState("Upstream Entry Detection", i) > 0.0 {
-			queueSize := s.GetLaneState("Downstream Queue Size", i)
-			effectiveLaneLength := params.FloatParams["lane_length"][0] -
-				(params.FloatParams["spacecraft_length"][0] * queueSize)
+		if s.GetState("Upstream Entry Detection", i, laneStateHistory) > 0.0 {
+			queueSize := s.GetState("Downstream Queue Size", i, laneStateHistory)
+			effectiveLaneLength := params["lane_length"][0] -
+				(params["spacecraft_length"][0] * queueSize)
 			timeSinceEntry := timestepsHistory.NextIncrement +
 				timestepsHistory.Values.AtVec(0) - timestepsHistory.Values.AtVec(i)
 			// This probabilistic sample draw answers the question: has the craft
 			// reached the back of the queue?
 			if s.uniformDist.Rand() < inverseGaussianCdf(
 				timeSinceEntry,
-				muFromParams(
-					effectiveLaneLength,
-					params.FloatParams["spacecraft_speed"][0],
-				),
-				lambdaFromParams(
-					effectiveLaneLength,
-					params.FloatParams["spacecraft_speed_variance"][0],
-				),
+				muFromParams(effectiveLaneLength, params["spacecraft_speed"][0]),
+				lambdaFromParams(effectiveLaneLength, params["spacecraft_speed_variance"][0]),
 			) {
 				// If it has, then update the state values accordingly
-				setState("Downstream Queue Size", queueSize+1)
-				setState("Min Upstream Entry Time Index In Queue", float64(i))
+				s.SetState("Downstream Queue Size", queueSize+1, outputState)
+				s.SetState("Min Upstream Entry Time Index In Queue", float64(i), outputState)
 				break
 			}
 		}
@@ -97,22 +101,22 @@ func (s *SpacecraftLaneCountIteration) arrivals(
 }
 
 func (s *SpacecraftLaneCountIteration) Iterate(
-	params *simulator.OtherParams,
+	params simulator.Params,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
 	// Create a state setter for convenience
-	outputState := &OutputState{Values: stateHistories[partitionIndex].Values.RawRowView(0)}
-	setState := GenerateStateValueSetter(LaneCountStateValueIndices, outputState)
+	laneStateHistory := stateHistories[partitionIndex]
+	outputState := laneStateHistory.Values.RawRowView(0)
 
 	// TODO: Deal with the upstream entries into the lane from a node
 
 	// Deal with upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
-	s.arrivals(setState, params, timestepsHistory)
+	s.arrivals(outputState, params, laneStateHistory, timestepsHistory)
 
 	// TODO: Deal with the downstream departures from the queue into a node
 
-	return outputState.Values
+	return outputState
 }
