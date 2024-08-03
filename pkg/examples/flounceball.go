@@ -187,7 +187,7 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data and create a state setter for convenience
+	// Reorganise state data
 	thisPlayerStateHistory := stateHistories[partitionIndex]
 	outputState := thisPlayerStateHistory.Values.RawRowView(0)
 	playerCoords := &Coordinates{
@@ -275,7 +275,7 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data and create a state setter for convenience
+	// Reorganise state data
 	matchStateHistory := stateHistories[partitionIndex]
 	outputState := matchStateHistory.Values.RawRowView(0)
 	ballCoords := &Coordinates{

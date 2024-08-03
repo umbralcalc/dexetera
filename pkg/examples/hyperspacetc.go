@@ -120,3 +120,39 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 
 	return outputState
 }
+
+// SpacecraftNodeCountIteration
+type SpacecraftNodeCountIteration struct {
+	GetState func(
+		key string,
+		timeIndex int,
+		stateHistory *simulator.StateHistory,
+	) float64
+	SetState    func(key string, value float64, outputState []float64)
+	uniformDist *distuv.Uniform
+}
+
+func (s *SpacecraftNodeCountIteration) Configure(
+	partitionIndex int,
+	settings *simulator.Settings,
+) {
+	s.uniformDist = &distuv.Uniform{
+		Min: 0.0,
+		Max: 1.0,
+		Src: rand.NewSource(settings.Seeds[partitionIndex]),
+	}
+}
+
+func (s *SpacecraftNodeCountIteration) Iterate(
+	params simulator.Params,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	laneStateHistory := stateHistories[partitionIndex]
+	outputState := laneStateHistory.Values.RawRowView(0)
+
+	// TODO: Handle logic for connecting lanes together
+	// TODO: Handle logic for moving spacecraft between connected lanes
+	return outputState
+}
