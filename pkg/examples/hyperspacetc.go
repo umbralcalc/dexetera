@@ -108,12 +108,7 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 
 	// Deal with upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
-	s.arrivals(
-		outputState,
-		params,
-		stateHistory,
-		timestepsHistory,
-	)
+	s.arrivals(outputState, params, stateHistory, timestepsHistory)
 
 	// TODO: Deal with the downstream departures from the queue into a node
 
