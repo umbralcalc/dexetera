@@ -161,12 +161,7 @@ func (p *PossessionNameMatcher) Defending(
 // FlounceballPlayerStateIteration describes the iteration of an individual
 // player state in a Flounceball match.
 type FlounceballPlayerStateIteration struct {
-	GetState func(
-		key string,
-		timeIndex int,
-		stateHistory *simulator.StateHistory,
-	) float64
-	SetState    func(key string, value float64, outputState []float64)
+	StateAccess *EasyStateAccess
 	uniformDist *distuv.Uniform
 }
 
@@ -187,37 +182,36 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
+	// Update state access
+	f.StateAccess.Update(partitionIndex, stateHistories)
+
 	// Reorganise state data
-	thisPlayerStateHistory := stateHistories[partitionIndex]
-	outputState := thisPlayerStateHistory.Values.RawRowView(0)
 	playerCoords := &Coordinates{
-		Radial:  f.GetState("Radial Position State", 0, thisPlayerStateHistory),
-		Angular: f.GetState("Angular Position State", 0, thisPlayerStateHistory),
+		Radial:  f.StateAccess.Get("Radial Position State", 0, partitionIndex),
+		Angular: f.StateAccess.Get("Angular Position State", 0, partitionIndex),
 	}
 	oppositionPlayerCoords := make([]*Coordinates, 0)
 	for _, index := range params["opposition_player_partition_indices"] {
 		oppositionPlayerCoords = append(
 			oppositionPlayerCoords,
 			&Coordinates{
-				Radial: f.GetState(
-					"Radial Position State", 0, stateHistories[int(index)]),
-				Angular: f.GetState(
-					"Angular Position State", 0, stateHistories[int(index)]),
+				Radial: f.StateAccess.Get(
+					"Radial Position State", 0, int(index)),
+				Angular: f.StateAccess.Get(
+					"Angular Position State", 0, int(index)),
 			},
 		)
 	}
 
 	// Logic for player substitutions which will change these values
 	spaceFindingTalent := int(params["player_space_finding_talent"][0])
-	f.SetState(
+	f.StateAccess.Set(
 		"Ball Interaction Speed",
 		params["player_ball_interaction_speed"][0],
-		outputState,
 	)
-	f.SetState(
+	f.StateAccess.Set(
 		"Ball Interaction Inaccuracy",
 		params["player_ball_interaction_inaccuracy"][0],
-		outputState,
 	)
 
 	// TODO: Below is movement for attack but need to handle movement for defence
@@ -240,22 +234,17 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 		params["player_movement_speed"][0],
 		timestepsHistory.NextIncrement,
 	)
-	f.SetState("Radial Position State", playerCoords.Radial, outputState)
-	f.SetState("Angular Position State", playerCoords.Angular, outputState)
+	f.StateAccess.Set("Radial Position State", playerCoords.Radial)
+	f.StateAccess.Set("Angular Position State", playerCoords.Angular)
 
-	return outputState
+	return f.StateAccess.Output()
 }
 
 // FlounceballMatchStateIteration describes the iteration of a Flounceball
 // match state in response to player positions and manager decisions.
 type FlounceballMatchStateIteration struct {
-	GetState func(
-		key string,
-		timeIndex int,
-		stateHistory *simulator.StateHistory,
-	) float64
-	SetState func(key string, value float64, outputState []float64)
-	normDist *distuv.Normal
+	StateAccess *EasyStateAccess
+	normDist    *distuv.Normal
 }
 
 func (f *FlounceballMatchStateIteration) Configure(
@@ -275,19 +264,25 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
+	// Update state access
+	f.StateAccess.Update(partitionIndex, stateHistories)
+
 	// Reorganise state data
-	matchStateHistory := stateHistories[partitionIndex]
-	outputState := matchStateHistory.Values.RawRowView(0)
 	ballCoords := &Coordinates{
-		Radial:  f.GetState("Ball Radial Position State", 0, matchStateHistory),
-		Angular: f.GetState("Ball Angular Position State", 0, matchStateHistory),
+		Radial: f.StateAccess.Get(
+			"Ball Radial Position State", 0, partitionIndex),
+		Angular: f.StateAccess.Get(
+			"Ball Angular Position State", 0, partitionIndex),
 	}
 	ballProjCoords := &Coordinates{
-		Radial:  f.GetState("Ball Projected Radial Position State", 0, matchStateHistory),
-		Angular: f.GetState("Ball Projected Angular Position State", 0, matchStateHistory),
+		Radial: f.StateAccess.Get(
+			"Ball Projected Radial Position State", 0, partitionIndex),
+		Angular: f.StateAccess.Get(
+			"Ball Projected Angular Position State", 0, partitionIndex),
 	}
 	posMatcher := &PossessionNameMatcher{
-		possession: int(f.GetState("Possession State", 0, matchStateHistory)),
+		possession: int(f.StateAccess.Get(
+			"Possession State", 0, partitionIndex)),
 	}
 
 	// TODO: Use the attacking team tactics and basic heuristics to set the
@@ -318,10 +313,9 @@ func (f *FlounceballMatchStateIteration) Iterate(
 					attackState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]]
 				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
 				// Add speed to the ball based on player ball interaction speed
-				f.SetState(
+				f.StateAccess.Set(
 					"Ball Speed State",
 					attackState[PlayerStateValueIndices["Ball Interaction Speed"]],
-					outputState,
 				)
 			}
 			// For the defending players
@@ -346,11 +340,11 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	// Compute the next ball radius and angle
 	ballCoords.Update(
 		ballProjCoords,
-		f.GetState("Ball Speed State", 0, matchStateHistory),
+		f.StateAccess.Get("Ball Speed State", 0, partitionIndex),
 		timestepsHistory.NextIncrement,
 	)
-	f.SetState("Ball Radial Position State", ballCoords.Radial, outputState)
-	f.SetState("Ball Angular Position State", ballCoords.Angular, outputState)
+	f.StateAccess.Set("Ball Radial Position State", ballCoords.Radial)
+	f.StateAccess.Set("Ball Angular Position State", ballCoords.Angular)
 
 	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
 	// - out of play is easy logic but hitting the ground could be hard so simple logic is to say the
@@ -359,5 +353,5 @@ func (f *FlounceballMatchStateIteration) Iterate(
 
 	// TODO: Logic for posession air time updates when ball is in play
 
-	return outputState
+	return f.StateAccess.Output()
 }
