@@ -45,7 +45,6 @@ func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
 
 // SpacecraftLaneCountIteration
 type SpacecraftLaneCountIteration struct {
-	StateAccess *EasyStateAccess
 	uniformDist *distuv.Uniform
 }
 
@@ -61,20 +60,18 @@ func (s *SpacecraftLaneCountIteration) Configure(
 }
 
 func (s *SpacecraftLaneCountIteration) arrivals(
+	outputState []float64,
 	params simulator.Params,
-	partitionIndex int,
+	stateHistory *simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) {
-	minEntryTimeIndex := int(s.StateAccess.Get(
-		"Min Upstream Entry Time Index In Queue",
-		0,
-		partitionIndex,
-	))
+	minEntryTimeIndex := int(stateHistory.Values.At(
+		0, LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
 	for i := minEntryTimeIndex - 1; i >= 1; i-- {
-		if s.StateAccess.Get(
-			"Upstream Entry Detection", i, partitionIndex) > 0.0 {
-			queueSize := s.StateAccess.Get(
-				"Downstream Queue Size", i, partitionIndex)
+		if stateHistory.Values.At(
+			i, LaneCountStateValueIndices["Upstream Entry Detection"]) > 0.0 {
+			queueSize := stateHistory.Values.At(
+				0, LaneCountStateValueIndices["Downstream Queue Size"])
 			effectiveLaneLength := params["lane_length"][0] -
 				(params["spacecraft_length"][0] * queueSize)
 			timeSinceEntry := timestepsHistory.NextIncrement +
@@ -87,8 +84,9 @@ func (s *SpacecraftLaneCountIteration) arrivals(
 				lambdaFromParams(effectiveLaneLength, params["spacecraft_speed_variance"][0]),
 			) {
 				// If it has, then update the state values accordingly
-				s.StateAccess.Set("Downstream Queue Size", queueSize+1)
-				s.StateAccess.Set("Min Upstream Entry Time Index In Queue", float64(i))
+				outputState[LaneCountStateValueIndices["Downstream Queue Size"]] = queueSize + 1
+				outputState[LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]] =
+					float64(i)
 				break
 			}
 		}
@@ -102,23 +100,28 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Update state access
-	s.StateAccess.Update(partitionIndex, stateHistories)
+	// Reorganise state data
+	stateHistory := stateHistories[partitionIndex]
+	outputState := stateHistory.Values.RawRowView(0)
 
 	// TODO: Deal with the upstream entries into the lane from a node
 
 	// Deal with upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
-	s.arrivals(params, partitionIndex, timestepsHistory)
+	s.arrivals(
+		outputState,
+		params,
+		stateHistory,
+		timestepsHistory,
+	)
 
 	// TODO: Deal with the downstream departures from the queue into a node
 
-	return s.StateAccess.Output()
+	return outputState
 }
 
 // SpacecraftNodeCountIteration
 type SpacecraftNodeCountIteration struct {
-	StateAccess *EasyStateAccess
 	uniformDist *distuv.Uniform
 }
 
@@ -139,10 +142,11 @@ func (s *SpacecraftNodeCountIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Update state access
-	s.StateAccess.Update(partitionIndex, stateHistories)
+	// Reorganise state data
+	stateHistory := stateHistories[partitionIndex]
+	outputState := stateHistory.Values.RawRowView(0)
 
 	// TODO: Handle logic for connecting lanes together
 	// TODO: Handle logic for moving spacecraft between connected lanes
-	return s.StateAccess.Output()
+	return outputState
 }
