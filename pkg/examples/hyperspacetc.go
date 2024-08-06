@@ -100,48 +100,57 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data
 	stateHistory := stateHistories[partitionIndex]
 	outputState := stateHistory.Values.RawRowView(0)
 
-	// TODO: Deal with the upstream entries into the lane from a node
+	// TODO: Deal with the upstream entries into the lane from a lane connector
 
 	// Deal with upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
 	s.arrivals(outputState, params, stateHistory, timestepsHistory)
 
-	// TODO: Deal with the downstream departures from the queue into a node
+	// TODO: Deal with the downstream departures from the queue into a lane
+	// connector which should be conditional on the lane having a green light!
 
 	return outputState
 }
 
-// SpacecraftNodeCountIteration
-type SpacecraftNodeCountIteration struct {
-	uniformDist *distuv.Uniform
+// SpacecraftLaneConnectorIteration
+type SpacecraftLaneConnectorIteration struct {
+	categoricalDist distuv.Categorical
 }
 
-func (s *SpacecraftNodeCountIteration) Configure(
+func (s *SpacecraftLaneConnectorIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
-	s.uniformDist = &distuv.Uniform{
-		Min: 0.0,
-		Max: 1.0,
-		Src: rand.NewSource(settings.Seeds[partitionIndex]),
+	weights := make([]float64, 0)
+	for i := 0; i < settings.StateWidths[partitionIndex]; i++ {
+		weights = append(weights, 1.0)
 	}
+	s.categoricalDist = distuv.NewCategorical(
+		weights,
+		rand.NewSource(settings.Seeds[partitionIndex]),
+	)
 }
 
-func (s *SpacecraftNodeCountIteration) Iterate(
+func (s *SpacecraftLaneConnectorIteration) Iterate(
 	params simulator.Params,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	// Reorganise state data
 	stateHistory := stateHistories[partitionIndex]
-	outputState := stateHistory.Values.RawRowView(0)
-
-	// TODO: Handle logic for connecting lanes together
-	// TODO: Handle logic for moving spacecraft between connected lanes
+	outputState := make([]float64, stateHistory.StateWidth)
+	for i := 0; i < stateHistory.StateWidth; i++ {
+		outputState = append(outputState, 0.0)
+	}
+	for i, count := range params["connected_partition_input_counts"] {
+		if count > 0.0 {
+			s.categoricalDist.Reweight(i, 0.0) // don't exit by same lane
+			outputState[int(s.categoricalDist.Rand())] = count
+			s.categoricalDist.Reweight(i, 1.0)
+		}
+	}
 	return outputState
 }

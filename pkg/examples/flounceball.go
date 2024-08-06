@@ -223,6 +223,7 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 		if prox > bestProx {
 			plannedPlayerCoords.Radial = coordsOption.Radial
 			plannedPlayerCoords.Angular = coordsOption.Angular
+			bestProx = prox
 		}
 	}
 	playerCoords.Update(
