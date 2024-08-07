@@ -44,7 +44,8 @@ func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
 	return laneLength * laneLength / speedVariance
 }
 
-// SpacecraftLaneCountIteration
+// SpacecraftLaneCountIteration iterates the state of a hyperspace lane in the
+// Hyperspace Traffic Control example.
 type SpacecraftLaneCountIteration struct {
 	uniformDist *distuv.Uniform
 }
@@ -137,7 +138,8 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	return outputState
 }
 
-// SpacecraftLaneConnectorIteration
+// SpacecraftLaneConnectorIteration iterates the state of a connection between
+// hyperspace lanes in the Hyperspace Traffic Control example.
 type SpacecraftLaneConnectorIteration struct {
 	categoricalDist distuv.Categorical
 }
