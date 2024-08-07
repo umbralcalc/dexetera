@@ -2,15 +2,12 @@ package examples
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
-
-// Planned approach:
-// - Use the histogram node iteraton when constructing the node
-// controller logic.
 
 // LaneCountSateValueIndices is a mapping which helps with describing
 // the meaning of the values for each spacecraft lane count state index.
@@ -169,7 +166,8 @@ func (s *SpacecraftLaneConnectorIteration) Iterate(
 	for i := 0; i < stateHistory.StateWidth; i++ {
 		outputState = append(outputState, 0.0)
 	}
-	for i, count := range params["connected_partition_input_counts"] {
+	for i, index := range params["connected_partitions"] {
+		count := params["partition_"+strconv.Itoa(int(index))+"_input_count"][0]
 		if count > 0.0 {
 			s.categoricalDist.Reweight(i, 0.0) // don't exit by same lane
 			outputState[int(s.categoricalDist.Rand())] = count

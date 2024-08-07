@@ -13,10 +13,39 @@ func TestHyperspacetc(t *testing.T) {
 			settings := simulator.LoadSettingsFromYaml(
 				"hyperspacetc_settings.yaml",
 			)
-			partitions := make([]simulator.Partition, 0)
-			rateIteration := &SpacecraftLaneCountIteration{}
-			rateIteration.Configure(0, settings)
-			partitions = append(partitions, simulator.Partition{Iteration: rateIteration})
+			partitions := []simulator.Partition{
+				{
+					Iteration: &SpacecraftLaneCountIteration{},
+				},
+				{
+					Iteration: &SpacecraftLaneCountIteration{},
+				},
+				{
+					Iteration: &SpacecraftLaneCountIteration{},
+				},
+				{
+					Iteration: &SpacecraftLaneConnectorIteration{},
+					ParamsFromUpstreamPartition: map[string]int{
+						"partition_0_input_count": 0,
+						"partition_1_input_count": 1,
+						"partition_2_input_count": 2,
+					},
+					ParamsFromIndices: map[string][]int{
+						"partition_0_input_count": {1},
+						"partition_1_input_count": {1},
+						"partition_2_input_count": {1},
+					},
+				},
+				{
+					Iteration: &SpacecraftLaneCountIteration{},
+				},
+				{
+					Iteration: &SpacecraftLaneCountIteration{},
+				},
+			}
+			for index, partition := range partitions {
+				partition.Iteration.Configure(index, settings)
+			}
 			implementations := &simulator.Implementations{
 				Partitions:      partitions,
 				OutputCondition: &simulator.EveryStepOutputCondition{},
