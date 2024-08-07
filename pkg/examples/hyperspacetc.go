@@ -110,11 +110,11 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 			0, int(params["lane_connector_value_index"][0]),
 		)
 
-	// Deal with upstream arrivals into the queue, assuming no overtaking
+	// Update the upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
 	s.arrivals(outputState, params, stateHistory, timestepsHistory)
 
-	// Deal with the downstream departures from the queue into a lane
+	// Update the downstream departures from the queue into a lane
 	// connector which should be conditional on the lane having allowed flow
 	outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 0.0
 	if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
@@ -130,6 +130,8 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] +=
 				timestepsHistory.NextIncrement
 		}
+	} else {
+		outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
 	}
 
 	return outputState
