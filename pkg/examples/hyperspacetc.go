@@ -15,10 +15,11 @@ import (
 // LaneCountSateValueIndices is a mapping which helps with describing
 // the meaning of the values for each spacecraft lane count state index.
 var LaneCountStateValueIndices = map[string]int{
-	"Upstream Entry Detection":               0,
-	"Downstream Exit Detection":              1,
+	"Upstream Entry Count":                   0,
+	"Downstream Exit Count":                  1,
 	"Downstream Queue Size":                  2,
 	"Min Upstream Entry Time Index In Queue": 3,
+	"Time Since Last Exit":                   4,
 }
 
 // standardNormalCdf returns the CDF value for a standard normal distribution.
@@ -69,7 +70,7 @@ func (s *SpacecraftLaneCountIteration) arrivals(
 		0, LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
 	for i := minEntryTimeIndex - 1; i >= 1; i-- {
 		if stateHistory.Values.At(
-			i, LaneCountStateValueIndices["Upstream Entry Detection"]) > 0.0 {
+			i, LaneCountStateValueIndices["Upstream Entry Count"]) > 0.0 {
 			queueSize := stateHistory.Values.At(
 				0, LaneCountStateValueIndices["Downstream Queue Size"])
 			effectiveLaneLength := params["lane_length"][0] -
@@ -103,14 +104,33 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistory := stateHistories[partitionIndex]
 	outputState := stateHistory.Values.RawRowView(0)
 
-	// TODO: Deal with the upstream entries into the lane from a lane connector
+	// Update the upstream entries into the lane from a lane connector
+	outputState[LaneCountStateValueIndices["Upstream Entry Count"]] =
+		stateHistories[int(params["lane_connector_partition"][0])].Values.At(
+			0, int(params["lane_connector_value_index"][0]),
+		)
 
 	// Deal with upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
 	s.arrivals(outputState, params, stateHistory, timestepsHistory)
 
-	// TODO: Deal with the downstream departures from the queue into a lane
-	// connector which should be conditional on the lane having a green light!
+	// Deal with the downstream departures from the queue into a lane
+	// connector which should be conditional on the lane having allowed flow
+	outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 0.0
+	if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
+		0, LaneCountStateValueIndices["Downstream Queue Size"]) > 0.0 {
+		if stateHistory.Values.At(
+			0,
+			LaneCountStateValueIndices["Time Since Last Exit"],
+		) > params["time_to_exit"][0] {
+			outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 1.0
+			outputState[LaneCountStateValueIndices["Downstream Queue Size"]] -= 1.0
+			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
+		} else {
+			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] +=
+				timestepsHistory.NextIncrement
+		}
+	}
 
 	return outputState
 }
