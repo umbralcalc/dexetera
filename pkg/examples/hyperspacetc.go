@@ -12,11 +12,26 @@ import (
 // LaneCountSateValueIndices is a mapping which helps with describing
 // the meaning of the values for each spacecraft lane count state index.
 var LaneCountStateValueIndices = map[string]int{
-	"Upstream Entry Count":                   0,
-	"Downstream Exit Count":                  1,
-	"Downstream Queue Size":                  2,
-	"Min Upstream Entry Time Index In Queue": 3,
-	"Time Since Last Exit":                   4,
+	"Upstream Entry Count":                            0,
+	"Downstream Exit Count":                           1,
+	"Downstream Queue Size":                           2,
+	"Min Upstream Entry Time Index In Queue":          3,
+	"Time Since Last Exit":                            4,
+	"Opposing Upstream Entry Count":                   5,
+	"Opposing Downstream Exit Count":                  6,
+	"Opposing Downstream Queue Size":                  7,
+	"Opposing Min Upstream Entry Time Index In Queue": 8,
+	"Opposing Time Since Last Exit":                   9,
+}
+
+// laneIndexFromBaseKeyName returns the state value index for the lane
+// count using the base key name and whether or not it is opposing.
+func laneIndexFromBaseKeyName(baseKeyName string, opposing bool) int {
+	if opposing {
+		return LaneCountStateValueIndices["Opposing "+baseKeyName]
+	} else {
+		return LaneCountStateValueIndices[baseKeyName]
+	}
 }
 
 // standardNormalCdf returns the CDF value for a standard normal distribution.
@@ -58,41 +73,6 @@ func (s *SpacecraftLaneCountIteration) Configure(
 	}
 }
 
-func (s *SpacecraftLaneCountIteration) arrivals(
-	outputState []float64,
-	params simulator.Params,
-	stateHistory *simulator.StateHistory,
-	timestepsHistory *simulator.CumulativeTimestepsHistory,
-) {
-	minEntryTimeIndex := int(stateHistory.Values.At(
-		0, LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
-	for i := minEntryTimeIndex - 1; i >= 1; i-- {
-		if stateHistory.Values.At(
-			i, LaneCountStateValueIndices["Upstream Entry Count"]) > 0.0 {
-			queueSize := stateHistory.Values.At(
-				0, LaneCountStateValueIndices["Downstream Queue Size"])
-			effectiveLaneLength := params["lane_length"][0] -
-				(params["spacecraft_length"][0] * queueSize)
-			timeSinceEntry := timestepsHistory.NextIncrement +
-				timestepsHistory.Values.AtVec(0) - timestepsHistory.Values.AtVec(i)
-			// This probabilistic sample draw answers the question: has the craft
-			// reached the back of the queue?
-			if s.uniformDist.Rand() < inverseGaussianCdf(
-				timeSinceEntry,
-				muFromParams(effectiveLaneLength, params["spacecraft_speed"][0]),
-				lambdaFromParams(effectiveLaneLength, params["spacecraft_speed_variance"][0]),
-			) {
-				// If it has, then update the state values accordingly
-				outputState[LaneCountStateValueIndices["Downstream Queue Size"]] = queueSize + 1
-				outputState[LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]] =
-					float64(i)
-				break
-			}
-		}
-		i += 1
-	}
-}
-
 func (s *SpacecraftLaneCountIteration) Iterate(
 	params simulator.Params,
 	partitionIndex int,
@@ -102,34 +82,82 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistory := stateHistories[partitionIndex]
 	outputState := stateHistory.Values.RawRowView(0)
 
-	// Update the upstream entries into the lane from a lane connector
-	outputState[LaneCountStateValueIndices["Upstream Entry Count"]] =
-		stateHistories[int(params["lane_connector_partition"][0])].Values.At(
-			0, int(params["lane_connector_value_index"][0]),
-		)
-
-	// Update the upstream arrivals into the queue, assuming no overtaking
-	// is allowed in this simple model
-	s.arrivals(outputState, params, stateHistory, timestepsHistory)
-
-	// Update the downstream departures from the queue into a lane
-	// connector which should be conditional on the lane having allowed flow
-	outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 0.0
-	if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
-		0, LaneCountStateValueIndices["Downstream Queue Size"]) > 0.0 {
-		if stateHistory.Values.At(
-			0,
-			LaneCountStateValueIndices["Time Since Last Exit"],
-		) > params["time_to_exit"][0] {
-			outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 1.0
-			outputState[LaneCountStateValueIndices["Downstream Queue Size"]] -= 1.0
-			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
-		} else {
-			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] +=
-				timestepsHistory.NextIncrement
+	// handle both lane directions in turn
+	for _, opposing := range []bool{true, false} {
+		oppStr := ""
+		if opposing {
+			oppStr = "opposing_"
 		}
-	} else {
-		outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
+		// Update the upstream entries into the lane from a lane connector if it exists
+		if connectorParts, ok := params[oppStr+
+			"upstream_lane_connector_partition"]; ok {
+			outputState[laneIndexFromBaseKeyName(
+				"Upstream Entry Count", opposing)] =
+				stateHistories[int(connectorParts[0])].Values.At(
+					0, int(params[oppStr+
+						"upstream_lane_connector_value_index"][0]),
+				)
+		}
+
+		// Update the upstream arrivals into the queue, assuming no overtaking
+		// is allowed in this simple model
+		minEntryTimeIndex := int(
+			stateHistory.Values.At(0, laneIndexFromBaseKeyName(
+				"Min Upstream Entry Time Index In Queue", opposing)))
+		for i := minEntryTimeIndex - 1; i >= 1; i-- {
+			if stateHistory.Values.At(
+				i, laneIndexFromBaseKeyName("Upstream Entry Count", opposing)) > 0.0 {
+				queueSize := stateHistory.Values.At(
+					0, laneIndexFromBaseKeyName("Downstream Queue Size", opposing))
+				effectiveLaneLength := params["lane_length"][0] -
+					(params["spacecraft_length"][0] * queueSize)
+				timeSinceEntry := timestepsHistory.NextIncrement +
+					timestepsHistory.Values.AtVec(0) - timestepsHistory.Values.AtVec(i)
+				// This probabilistic sample draw answers the question: has the craft
+				// reached the back of the queue?
+				if s.uniformDist.Rand() < inverseGaussianCdf(
+					timeSinceEntry,
+					muFromParams(effectiveLaneLength, params["spacecraft_speed"][0]),
+					lambdaFromParams(
+						effectiveLaneLength, params["spacecraft_speed_variance"][0]),
+				) {
+					// If it has, then update the state values accordingly
+					outputState[laneIndexFromBaseKeyName(
+						"Downstream Queue Size", opposing)] = queueSize + 1
+					outputState[laneIndexFromBaseKeyName(
+						"Min Upstream Entry Time Index In Queue", opposing)] =
+						float64(i)
+					break
+				}
+			}
+			i += 1
+		}
+
+		// Update the downstream departures from the queue into a lane
+		// connector which should be conditional on the lane having allowed flow
+		outputState[laneIndexFromBaseKeyName(
+			"Downstream Exit Count", opposing)] = 0.0
+		if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
+			0, laneIndexFromBaseKeyName("Downstream Queue Size", opposing)) > 0.0 {
+			if stateHistory.Values.At(
+				0,
+				laneIndexFromBaseKeyName("Time Since Last Exit", opposing),
+			) > params["time_to_exit"][0] {
+				outputState[laneIndexFromBaseKeyName(
+					"Downstream Exit Count", opposing)] = 1.0
+				outputState[laneIndexFromBaseKeyName(
+					"Downstream Queue Size", opposing)] -= 1.0
+				outputState[laneIndexFromBaseKeyName(
+					"Time Since Last Exit", opposing)] = 0.0
+			} else {
+				outputState[laneIndexFromBaseKeyName(
+					"Time Since Last Exit", opposing)] +=
+					timestepsHistory.NextIncrement
+			}
+		} else {
+			outputState[laneIndexFromBaseKeyName(
+				"Time Since Last Exit", opposing)] = 0.0
+		}
 	}
 
 	return outputState
@@ -164,7 +192,7 @@ func (s *SpacecraftLaneConnectorIteration) Iterate(
 	stateHistory := stateHistories[partitionIndex]
 	outputState := make([]float64, stateHistory.StateWidth)
 	for i := 0; i < stateHistory.StateWidth; i++ {
-		outputState = append(outputState, 0.0)
+		outputState[i] = 0.0
 	}
 	for i, index := range params["connected_partitions"] {
 		count := params["partition_"+strconv.Itoa(int(index))+"_input_count"][0]
