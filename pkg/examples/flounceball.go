@@ -183,6 +183,8 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 ) []float64 {
 	// Reorganise state data
 	stateHistory := stateHistories[partitionIndex]
+	matchStateHistory := stateHistories[int(
+		params["match_state_partition_index"][0])]
 	outputState := stateHistory.Values.RawRowView(0)
 	playerCoords := &Coordinates{
 		Radial: stateHistory.Values.At(
@@ -210,22 +212,49 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	outputState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]] =
 		params["player_ball_interaction_inaccuracy"][0]
 
-	// TODO: Below is movement for attack but need to handle movement for defence
-
-	// Logic for player movement and positioning when in possession
-	_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
-	coordsOption := playerCoords
+	// Compute the planned player coordinates whether or not the player's
+	// team is in possession
 	plannedPlayerCoords := playerCoords
-	for i := 0; i < spaceFindingTalent; i++ {
-		coordsOption.Radial = f.uniformDist.Rand()
-		coordsOption.Angular = f.uniformDist.Rand()
-		_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
-		if prox > bestProx {
-			plannedPlayerCoords.Radial = coordsOption.Radial
-			plannedPlayerCoords.Angular = coordsOption.Angular
-			bestProx = prox
+	if params["team_possession_state_value"][0] == matchStateHistory.Values.At(
+		0, MatchStateValueIndices["Possession State"]) {
+		// Logic for player movement and positioning when in possession
+		_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
+		coordsOption := playerCoords
+		for i := 0; i < spaceFindingTalent; i++ {
+			coordsOption.Radial = f.uniformDist.Rand()
+			coordsOption.Angular = f.uniformDist.Rand()
+			_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
+			if prox > bestProx {
+				plannedPlayerCoords.Radial = coordsOption.Radial
+				plannedPlayerCoords.Angular = coordsOption.Angular
+				bestProx = prox
+			}
+		}
+	} else {
+		// Logic for player movement and positioning when not in possession
+		ballCoords := &Coordinates{
+			Radial: matchStateHistory.Values.At(
+				0, MatchStateValueIndices["Ball Radial Position State"]),
+			Angular: matchStateHistory.Values.At(
+				0, MatchStateValueIndices["Ball Angular Position State"]),
+		}
+		ballProjCoords := &Coordinates{
+			Radial: matchStateHistory.Values.At(
+				0, MatchStateValueIndices["Ball Projected Radial Position State"]),
+			Angular: matchStateHistory.Values.At(
+				0, MatchStateValueIndices["Ball Projected Angular Position State"]),
+		}
+		coords := []*Coordinates{ballCoords, ballProjCoords}
+		i, prox := playerCoords.MinProximity(coords)
+		if prox < params["team_defensive_distance_threshold"][0] {
+			plannedPlayerCoords = coords[i]
+		} else {
+			i, _ := playerCoords.MinProximity(oppositionPlayerCoords)
+			plannedPlayerCoords = oppositionPlayerCoords[i]
 		}
 	}
+
+	// Update the player position states
 	playerCoords.Update(
 		plannedPlayerCoords,
 		params["player_movement_speed"][0],
