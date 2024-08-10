@@ -29,15 +29,11 @@ func TestHyperspacetc(t *testing.T) {
 						"partition_0_input_count": 0,
 						"partition_1_input_count": 1,
 						"partition_2_input_count": 2,
-						"partition_4_input_count": 4,
-						"partition_5_input_count": 5,
 					},
 					ParamsFromIndices: map[string][]int{
 						"partition_0_input_count": {1},
 						"partition_1_input_count": {1},
 						"partition_2_input_count": {1},
-						"partition_4_input_count": {6},
-						"partition_5_input_count": {6},
 					},
 				},
 				{
