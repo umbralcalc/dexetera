@@ -16,11 +16,6 @@ const PitchRadiusMetres = 100.0
 // allowed for them to interact.
 const InteractionRadiusMetres = 1.0
 
-// MaxBallFallingLifetime is the maximum time a ball is assumed to be in
-// still airborne when it reaches within the InteractionRadiusMetres of
-// its projected location and no player has yet interacted with it.
-const MaxBallFallingLifetime = 1.0
-
 // PossessionValueMap is a mapping to check which team is in possession
 // based on the value of the possession state index.
 var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
@@ -216,35 +211,41 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	// Compute the planned player coordinates whether or not the player's
 	// team is in possession
 	plannedPlayerCoords := playerCoords
+	ballCoords := &Coordinates{
+		Radial: matchStateHistory.Values.At(
+			0, MatchStateValueIndices["Ball Radial Position State"]),
+		Angular: matchStateHistory.Values.At(
+			0, MatchStateValueIndices["Ball Angular Position State"]),
+	}
+	ballProjCoords := &Coordinates{
+		Radial: matchStateHistory.Values.At(
+			0, MatchStateValueIndices["Ball Projected Radial Position State"]),
+		Angular: matchStateHistory.Values.At(
+			0, MatchStateValueIndices["Ball Projected Angular Position State"]),
+	}
 	if params["team_possession_state_value"][0] == matchStateHistory.Values.At(
 		0, MatchStateValueIndices["Possession State"]) {
 		// Logic for player movement and positioning when in possession
-		_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
-		coordsOption := playerCoords
-		for i := 0; i < spaceFindingTalent; i++ {
-			coordsOption.Radial = f.uniformDist.Rand() * PitchRadiusMetres
-			coordsOption.Angular = f.uniformDist.Rand() * 2.0 * math.Pi
-			_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
-			if prox > bestProx {
-				plannedPlayerCoords.Radial = coordsOption.Radial
-				plannedPlayerCoords.Angular = coordsOption.Angular
-				bestProx = prox
+		coords := []*Coordinates{ballCoords, ballProjCoords}
+		i, prox := playerCoords.MinProximity(coords)
+		if prox < params["team_attacking_distance_threshold"][0] {
+			plannedPlayerCoords = coords[i]
+		} else {
+			_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
+			coordsOption := playerCoords
+			for i := 0; i < spaceFindingTalent; i++ {
+				coordsOption.Radial = f.uniformDist.Rand() * PitchRadiusMetres
+				coordsOption.Angular = f.uniformDist.Rand() * 2.0 * math.Pi
+				_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
+				if prox > bestProx {
+					plannedPlayerCoords.Radial = coordsOption.Radial
+					plannedPlayerCoords.Angular = coordsOption.Angular
+					bestProx = prox
+				}
 			}
 		}
 	} else {
 		// Logic for player movement and positioning when not in possession
-		ballCoords := &Coordinates{
-			Radial: matchStateHistory.Values.At(
-				0, MatchStateValueIndices["Ball Radial Position State"]),
-			Angular: matchStateHistory.Values.At(
-				0, MatchStateValueIndices["Ball Angular Position State"]),
-		}
-		ballProjCoords := &Coordinates{
-			Radial: matchStateHistory.Values.At(
-				0, MatchStateValueIndices["Ball Projected Radial Position State"]),
-			Angular: matchStateHistory.Values.At(
-				0, MatchStateValueIndices["Ball Projected Angular Position State"]),
-		}
 		coords := []*Coordinates{ballCoords, ballProjCoords}
 		i, prox := playerCoords.MinProximity(coords)
 		if prox < params["team_defensive_distance_threshold"][0] {
@@ -354,10 +355,10 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	if ballIsInteractable {
 		defendCoords := make([]*Coordinates, 0)
 		defendInaccuracies := make([]float64, 0)
-		for i := 1; i < 11; i++ {
+		for i := 0; i < 10; i++ {
 			defendState := params[posMatcher.Defending(
-				"your_player_"+strconv.Itoa(i)+"_state",
-				"other_player_"+strconv.Itoa(i)+"_state",
+				"your_player_"+strconv.Itoa(i+1)+"_state",
+				"other_player_"+strconv.Itoa(i+1)+"_state",
 			)]
 			defendCoords = append(defendCoords, &Coordinates{
 				Radial:  defendState[PlayerStateValueIndices["Radial Position State"]],
@@ -373,10 +374,10 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		attackInaccuracies := make([]float64, 0)
 		var bestMinProximity float64
 		var bestAttackBallProjCoords *Coordinates
-		for i := 1; i < 11; i++ {
+		for i := 0; i < 10; i++ {
 			attackState := params[posMatcher.Attacking(
-				"your_player_"+strconv.Itoa(i)+"_state",
-				"other_player_"+strconv.Itoa(i)+"_state",
+				"your_player_"+strconv.Itoa(i+1)+"_state",
+				"other_player_"+strconv.Itoa(i+1)+"_state",
 			)]
 			attackCoords = append(attackCoords, &Coordinates{
 				Radial:  attackState[PlayerStateValueIndices["Radial Position State"]],
@@ -402,7 +403,7 @@ func (f *FlounceballMatchStateIteration) Iterate(
 			}
 		}
 		setInitProjCoords := false
-		for i := 1; i < 11; i++ {
+		for i := 0; i < 10; i++ {
 			if ballCoords.Proximity(attackCoords[i]) <= InteractionRadiusMetres {
 				// Make sure restart state ends if there is an attacking player at the ball
 				if outputState[MatchStateValueIndices["Restart State"]] == 1.0 {
@@ -445,9 +446,11 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	outputState[MatchStateValueIndices["Ball Projected Angular Position State"]] =
 		ballProjCoords.Angular
 
-	// Posession air time update assuming the ball is still in play
-	outputState[MatchStateValueIndices["Ball Possession Air Time"]] +=
-		timestepsHistory.NextIncrement
+	// Posession air time update given the ball is still in play and not restarting
+	if outputState[MatchStateValueIndices["Restart State"]] == 0.0 {
+		outputState[MatchStateValueIndices["Ball Possession Air Time"]] +=
+			timestepsHistory.NextIncrement
+	}
 
 	return outputState
 }

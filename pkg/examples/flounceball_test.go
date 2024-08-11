@@ -45,7 +45,7 @@ func TestFlounceball(t *testing.T) {
 						"your_player_9_state":   8,
 						"your_player_10_state":  9,
 						"other_player_1_state":  10,
-						"other_player_2_state":  12,
+						"other_player_2_state":  11,
 						"other_player_3_state":  12,
 						"other_player_4_state":  13,
 						"other_player_5_state":  14,
@@ -63,11 +63,11 @@ func TestFlounceball(t *testing.T) {
 			implementations := &simulator.Implementations{
 				Partitions:      partitions,
 				OutputCondition: &simulator.EveryStepOutputCondition{},
-				OutputFunction:  &simulator.NilOutputFunction{},
+				OutputFunction:  &simulator.StdoutOutputFunction{},
 				TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
 					MaxNumberOfSteps: 100,
 				},
-				TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
+				TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 0.05},
 			}
 			coordinator := simulator.NewPartitionCoordinator(
 				settings,
