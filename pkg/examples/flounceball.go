@@ -222,8 +222,8 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 		_, bestProx := playerCoords.MinProximity(oppositionPlayerCoords)
 		coordsOption := playerCoords
 		for i := 0; i < spaceFindingTalent; i++ {
-			coordsOption.Radial = f.uniformDist.Rand()
-			coordsOption.Angular = f.uniformDist.Rand()
+			coordsOption.Radial = f.uniformDist.Rand() * PitchRadiusMetres
+			coordsOption.Angular = f.uniformDist.Rand() * 2.0 * math.Pi
 			_, prox := coordsOption.MinProximity(oppositionPlayerCoords)
 			if prox > bestProx {
 				plannedPlayerCoords.Radial = coordsOption.Radial
