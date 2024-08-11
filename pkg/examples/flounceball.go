@@ -333,10 +333,10 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		possession: int(stateHistory.Values.At(
 			0, MatchStateValueIndices["Possession State"])),
 	}
+	ballIsInteractable := ballCoords.Proximity(ballProjCoords) <= InteractionRadiusMetres
 
 	// If the ball is within the interaction radius of the projected location,
 	// increment the cumulative falling time and check if has expired
-	ballIsInteractable := ballCoords.Proximity(ballProjCoords) <= InteractionRadiusMetres
 	if ballIsInteractable && outputState[MatchStateValueIndices["Restart State"]] == 0.0 {
 		fallTime := outputState[MatchStateValueIndices["Ball Cumulative Falling Time"]] +
 			timestepsHistory.NextIncrement
@@ -344,6 +344,9 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		if fallTime > params["max_ball_falling_time"][0] {
 			return f.restartOutputState(posMatcher, outputState)
 		}
+	} else if ballCoords.Radial > PitchRadiusMetres {
+		// also handle the case of the ball going out of the field of play
+		return f.restartOutputState(posMatcher, outputState)
 	}
 
 	// TODO: Use the attacking team tactics and basic heuristics to set the
