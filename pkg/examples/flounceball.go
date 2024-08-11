@@ -349,55 +349,84 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		return f.restartOutputState(posMatcher, outputState)
 	}
 
-	// TODO: Use the attacking team tactics and basic heuristics to set the
-	// initial intended ball projected position states.
-	// Heuristics can be built from:
-	// - the average proximity of defending players to the projected location
-	// - the average proximity of attacking players to the projected location
-	// - the total distance to the projected location
-
 	// Apply the player ball interaction logic once the ball is within the interaction
 	// radius of the projected location
 	if ballIsInteractable {
-		playerCoords := &Coordinates{}
+		defendCoords := make([]*Coordinates, 0)
+		defendInaccuracies := make([]float64, 0)
 		for i := 1; i < 11; i++ {
-			// For the attacking players
-			attackState := params[posMatcher.Attacking(
-				"your_player_"+strconv.Itoa(i)+"_state",
-				"other_player_"+strconv.Itoa(i)+"_state",
-			)]
-			playerCoords.Radial =
-				attackState[PlayerStateValueIndices["Radial Position State"]]
-			playerCoords.Angular =
-				attackState[PlayerStateValueIndices["Angular Position State"]]
-			if ballCoords.Proximity(playerCoords) <= InteractionRadiusMetres {
-				// Make sure restart state ends if there is an attacking player at the ball
-				if outputState[MatchStateValueIndices["Restart State"]] == 1.0 {
-					outputState[MatchStateValueIndices["Restart State"]] = 0.0
-				}
-				// Add noise to the projected ball location based on player inaccuracy
-				// - good attackers have lower inaccuracy
-				f.normDist.Sigma =
-					attackState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]]
-				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
-				// Add speed to the ball based on player ball interaction speed
-				outputState[MatchStateValueIndices["Ball Speed State"]] =
-					attackState[PlayerStateValueIndices["Ball Interaction Speed"]]
-			}
-			// For the defending players
 			defendState := params[posMatcher.Defending(
 				"your_player_"+strconv.Itoa(i)+"_state",
 				"other_player_"+strconv.Itoa(i)+"_state",
 			)]
-			playerCoords.Radial =
-				defendState[PlayerStateValueIndices["Radial Position State"]]
-			playerCoords.Angular =
-				defendState[PlayerStateValueIndices["Angular Position State"]]
-			if ballCoords.Proximity(playerCoords) <= InteractionRadiusMetres {
+			defendCoords = append(defendCoords, &Coordinates{
+				Radial:  defendState[PlayerStateValueIndices["Radial Position State"]],
+				Angular: defendState[PlayerStateValueIndices["Angular Position State"]],
+			})
+			defendInaccuracies = append(
+				defendInaccuracies,
+				defendState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]],
+			)
+		}
+		attackCoords := make([]*Coordinates, 0)
+		attackSpeeds := make([]float64, 0)
+		attackInaccuracies := make([]float64, 0)
+		var bestMinProximity float64
+		var bestAttackBallProjCoords *Coordinates
+		for i := 1; i < 11; i++ {
+			attackState := params[posMatcher.Attacking(
+				"your_player_"+strconv.Itoa(i)+"_state",
+				"other_player_"+strconv.Itoa(i)+"_state",
+			)]
+			attackCoords = append(attackCoords, &Coordinates{
+				Radial:  attackState[PlayerStateValueIndices["Radial Position State"]],
+				Angular: attackState[PlayerStateValueIndices["Angular Position State"]],
+			})
+			attackSpeeds = append(
+				attackSpeeds,
+				attackState[PlayerStateValueIndices["Ball Interaction Speed"]],
+			)
+			attackInaccuracies = append(
+				attackInaccuracies,
+				attackState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]],
+			)
+			// Find the coords of least well-defended player on the attacking side
+			if i == 0 {
+				bestAttackBallProjCoords = attackCoords[0]
+				_, prox := attackCoords[0].MinProximity(defendCoords)
+				bestMinProximity = prox
+			} else if _, prox := attackCoords[i].MinProximity(
+				defendCoords); prox > bestMinProximity {
+				bestAttackBallProjCoords = attackCoords[i]
+				bestMinProximity = prox
+			}
+		}
+		setInitProjCoords := false
+		for i := 1; i < 11; i++ {
+			if ballCoords.Proximity(attackCoords[i]) <= InteractionRadiusMetres {
+				// Make sure restart state ends if there is an attacking player at the ball
+				if outputState[MatchStateValueIndices["Restart State"]] == 1.0 {
+					outputState[MatchStateValueIndices["Restart State"]] = 0.0
+				}
+				// Set the initial ball projected location to be closest to the least
+				// well-defended player on the attacking team - heuristic for good play
+				if !setInitProjCoords {
+					ballProjCoords = bestAttackBallProjCoords
+					setInitProjCoords = true
+				}
+
+				// Add noise to the projected ball location based on player inaccuracy
+				// - good attackers have lower inaccuracy
+				f.normDist.Sigma = attackInaccuracies[i]
+				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
+				// Add speed to the ball based on player ball interaction speed
+				outputState[MatchStateValueIndices["Ball Speed State"]] = attackSpeeds[i]
+			}
+			// For the defending players
+			if ballCoords.Proximity(defendCoords[i]) <= InteractionRadiusMetres {
 				// Add noise to the projected ball location based on player accuracy
 				// - good defenders have higher inaccuracy
-				f.normDist.Sigma =
-					defendState[PlayerStateValueIndices["Ball Interaction Inaccuracy"]]
+				f.normDist.Sigma = defendInaccuracies[i]
 				ballProjCoords.ApplyShift(f.normDist.Rand(), f.normDist.Rand())
 			}
 		}
@@ -406,11 +435,15 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	// Compute the next ball radius and angle
 	ballCoords.Update(
 		ballProjCoords,
-		stateHistory.Values.At(0, MatchStateValueIndices["Ball Speed State"]),
+		outputState[MatchStateValueIndices["Ball Speed State"]],
 		timestepsHistory.NextIncrement,
 	)
 	outputState[MatchStateValueIndices["Ball Radial Position State"]] = ballCoords.Radial
 	outputState[MatchStateValueIndices["Ball Angular Position State"]] = ballCoords.Angular
+	outputState[MatchStateValueIndices["Ball Projected Radial Position State"]] =
+		ballProjCoords.Radial
+	outputState[MatchStateValueIndices["Ball Projected Angular Position State"]] =
+		ballProjCoords.Angular
 
 	// Posession air time update assuming the ball is still in play
 	outputState[MatchStateValueIndices["Ball Possession Air Time"]] +=
