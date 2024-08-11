@@ -28,16 +28,17 @@ var PossessionValueMap = map[int]string{0: "Your Team", 1: "Other Team"}
 // MatchStateValueIndices is a mapping which helps with describing the
 // meaning of the values for each match state index.
 var MatchStateValueIndices = map[string]int{
-	"Possession State":                      0,
-	"Your Team Total Air Time":              1,
-	"Other Team Total Air Time":             2,
-	"Ball Possession Air Time":              3,
-	"Ball Speed State":                      4,
-	"Ball Radial Position State":            5,
-	"Ball Angular Position State":           6,
-	"Ball Projected Radial Position State":  7,
-	"Ball Projected Angular Position State": 8,
-	"Ball Cumulative Falling Time":          9,
+	"Restart State":                         0,
+	"Possession State":                      1,
+	"Your Team Total Air Time":              2,
+	"Other Team Total Air Time":             3,
+	"Ball Possession Air Time":              4,
+	"Ball Speed State":                      5,
+	"Ball Radial Position State":            6,
+	"Ball Angular Position State":           7,
+	"Ball Projected Radial Position State":  8,
+	"Ball Projected Angular Position State": 9,
+	"Ball Cumulative Falling Time":          10,
 }
 
 // PlayerStateValueIndices is a mapping which helps with describing the
@@ -285,6 +286,28 @@ func (f *FlounceballMatchStateIteration) Configure(
 	}
 }
 
+// restartOutputState occurs when the ball goes out of play or falls and
+// a change of possession must happen
+func (f *FlounceballMatchStateIteration) restartOutputState(
+	posMatcher *PossessionNameMatcher,
+	outputState []float64,
+) []float64 {
+	outputState[MatchStateValueIndices["Restart State"]] = 1.0
+	pos := outputState[MatchStateValueIndices["Possession State"]]
+	outputState[MatchStateValueIndices["Possession State"]] = 1.0 - pos
+	outputState[MatchStateValueIndices[posMatcher.Attacking(
+		"Your Team Total Air Time", "Other Team Total Air Time")]] +=
+		outputState[MatchStateValueIndices["Ball Possession Air Time"]]
+	outputState[MatchStateValueIndices["Ball Possession Air Time"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Speed State"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Radial Position State"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Angular Position State"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Projected Radial Position State"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Projected Angular Position State"]] = 0.0
+	outputState[MatchStateValueIndices["Ball Cumulative Falling Time"]] = 0.0
+	return outputState
+}
+
 func (f *FlounceballMatchStateIteration) Iterate(
 	params simulator.Params,
 	partitionIndex int,
@@ -311,6 +334,18 @@ func (f *FlounceballMatchStateIteration) Iterate(
 			0, MatchStateValueIndices["Possession State"])),
 	}
 
+	// If the ball is within the interaction radius of the projected location,
+	// increment the cumulative falling time and check if has expired
+	ballIsInteractable := ballCoords.Proximity(ballProjCoords) <= InteractionRadiusMetres
+	if ballIsInteractable && outputState[MatchStateValueIndices["Restart State"]] == 0.0 {
+		fallTime := outputState[MatchStateValueIndices["Ball Cumulative Falling Time"]] +
+			timestepsHistory.NextIncrement
+		outputState[MatchStateValueIndices["Ball Cumulative Falling Time"]] = fallTime
+		if fallTime > params["max_ball_falling_time"][0] {
+			return f.restartOutputState(posMatcher, outputState)
+		}
+	}
+
 	// TODO: Use the attacking team tactics and basic heuristics to set the
 	// initial intended ball projected position states.
 	// Heuristics can be built from:
@@ -320,7 +355,7 @@ func (f *FlounceballMatchStateIteration) Iterate(
 
 	// Apply the player ball interaction logic once the ball is within the interaction
 	// radius of the projected location
-	if ballCoords.Proximity(ballProjCoords) <= InteractionRadiusMetres {
+	if ballIsInteractable {
 		playerCoords := &Coordinates{}
 		for i := 1; i < 11; i++ {
 			// For the attacking players
@@ -333,6 +368,10 @@ func (f *FlounceballMatchStateIteration) Iterate(
 			playerCoords.Angular =
 				attackState[PlayerStateValueIndices["Angular Position State"]]
 			if ballCoords.Proximity(playerCoords) <= InteractionRadiusMetres {
+				// Make sure restart state ends if there is an attacking player at the ball
+				if outputState[MatchStateValueIndices["Restart State"]] == 1.0 {
+					outputState[MatchStateValueIndices["Restart State"]] = 0.0
+				}
 				// Add noise to the projected ball location based on player inaccuracy
 				// - good attackers have lower inaccuracy
 				f.normDist.Sigma =
@@ -370,12 +409,9 @@ func (f *FlounceballMatchStateIteration) Iterate(
 	outputState[MatchStateValueIndices["Ball Radial Position State"]] = ballCoords.Radial
 	outputState[MatchStateValueIndices["Ball Angular Position State"]] = ballCoords.Angular
 
-	// TODO: Logic for possession and total air time updates when ball goes out of play or hits ground
-	// - out of play is easy logic but hitting the ground could be hard so simple logic is to say the
-	// ball has a 'MaxBallFallingLifetime' when it reaches the interaction radius of the projected
-	// location which gets reset when a player interacts with it
-
-	// TODO: Logic for posession air time updates when ball is in play
+	// Posession air time update assuming the ball is still in play
+	outputState[MatchStateValueIndices["Ball Possession Air Time"]] +=
+		timestepsHistory.NextIncrement
 
 	return outputState
 }
