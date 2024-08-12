@@ -11,7 +11,7 @@ let isConnected = false;
 self.onmessage = async function(event) {
     if (event.data.action === 'start') {
         await loadWasm(event.data.wasmBinary);
-        startWebSocketClient();
+        startWebSocketClient(event.data.serverPartitionIndices);
     }
 };
 
@@ -22,7 +22,7 @@ async function loadWasm(wasmBinary) {
     wasmInstance = result.instance;
 }
 
-function startWebSocketClient() {
+function startWebSocketClient(serverPartitionIndices) {
     const socket = new WebSocket('ws://localhost:2112');
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
@@ -48,11 +48,26 @@ function startWebSocketClient() {
     // Callback function
     function handlePartitionState(data) {
         const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
+        timesteps = message.getCumulativeTimesteps();
+        partitionIndex = message.getPartitionIndex();
+        state = message.getState().getValuesList();
         console.log("-------------------------------------------------------");
-        console.log("Cumulative Timesteps:", message.getCumulativeTimesteps());
-        console.log("Partition Index:", message.getPartitionIndex());
-        console.log("State:", message.getState().getValuesList());
-        socket.send(data);
+        console.log("Cumulative Timesteps:", timesteps);
+        console.log("Partition Index:", partitionIndex);
+        console.log("State:", state);
+        // Send the data to the main display thread
+        self.postMessage({
+            type: 'partitionState',
+            data: {
+                timesteps: timesteps,
+                partitionIndex: partitionIndex,
+                state: state,
+            }
+        });
+        // Send the subset of the data to the server
+        if (serverPartitionIndices.includes(partitionIndex)) {
+            socket.send(data);
+        }
     };
 }
 
