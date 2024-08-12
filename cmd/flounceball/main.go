@@ -9,54 +9,130 @@ import (
 )
 
 func main() {
+	yourPlayerTemplateParams := simulator.Params{
+		"match_state_partition_index":         {20},
+		"opposition_player_partition_indices": {10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+		"player_space_finding_talent":         {7},
+		"player_ball_interaction_speed":       {0.5},
+		"player_ball_interaction_inaccuracy":  {0.1},
+		"team_possession_state_value":         {0},
+		"team_attacking_distance_threshold":   {10.0},
+		"team_defensive_distance_threshold":   {10.0},
+		"player_movement_speed":               {0.1},
+	}
+	otherPlayerTemplateParams := simulator.Params{
+		"match_state_partition_index":         {20},
+		"opposition_player_partition_indices": {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		"player_space_finding_talent":         {7},
+		"player_ball_interaction_speed":       {0.5},
+		"player_ball_interaction_inaccuracy":  {0.1},
+		"team_possession_state_value":         {1},
+		"team_attacking_distance_threshold":   {10.0},
+		"team_defensive_distance_threshold":   {10.0},
+		"player_movement_speed":               {0.1},
+	}
+	matchTemplateParams := simulator.Params{
+		"max_ball_falling_time": {5.0},
+	}
 	settings := &simulator.Settings{
-		OtherParams: []*simulator.OtherParams{
-			{
-				FloatParams: map[string][]float64{
-					"param_values": {1.0, 1.0, 1.0},
-				},
-				IntParams: map[string][]int64{},
-			},
-			{
-				FloatParams: map[string][]float64{
-					"rates":        {0.5, 1.0, 0.8, 1.0, 1.1},
-					"gamma_alphas": {1.0, 2.5, 3.0, 1.8, 1.0},
-					"gamma_betas":  {2.0, 1.0, 4.1, 2.0, 1.2},
-				},
-				IntParams: map[string][]int64{},
-			},
-			{
-				FloatParams: map[string][]float64{
-					"rates":        {1.5, 0.2, 0.6},
-					"gamma_alphas": {2.3, 5.1, 2.0},
-					"gamma_betas":  {2.0, 1.5, 1.1},
-				},
-				IntParams: map[string][]int64{},
-			},
+		Params: []simulator.Params{
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			yourPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			otherPlayerTemplateParams,
+			matchTemplateParams,
 		},
 		InitStateValues: [][]float64{
-			{1.0, 1.0, 1.0},
-			{0.0, 0.0, 0.0, 0.0, 0.0},
-			{0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0},
+			{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 		},
 		InitTimeValue:         0.0,
-		Seeds:                 []uint64{0, 563, 8312},
-		StateWidths:           []int{3, 5, 3},
-		StateHistoryDepths:    []int{2, 2, 2},
-		TimestepsHistoryDepth: 2,
+		Seeds:                 []uint64{563, 8312, 111, 24253, 55524, 63, 12, 1, 2253, 524, 1563, 822312, 11211, 23, 24, 6, 2, 1000, 3, 4, 8898},
+		StateWidths:           []int{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 11},
+		StateHistoryDepths:    []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		TimestepsHistoryDepth: 1,
 	}
-	partitions := []simulator.Partition{
-		{Iteration: &simulator.ParamValuesIteration{}},
-		{Iteration: &examples.FlounceballPlayerStateIteration{}},
-		{
-			Iteration: &simulator.ConstantValuesIteration{},
+	partitions := make([]simulator.Partition, 0)
+	for i := 0; i < 10; i++ {
+		yourPlayerIteration := &examples.FlounceballPlayerStateIteration{}
+		partitions = append(
+			partitions,
+			simulator.Partition{Iteration: yourPlayerIteration},
+		)
+	}
+	for i := 0; i < 10; i++ {
+		otherPlayerIteration := &examples.FlounceballPlayerStateIteration{}
+		partitions = append(
+			partitions,
+			simulator.Partition{Iteration: otherPlayerIteration},
+		)
+	}
+	matchIteration := &examples.FlounceballMatchStateIteration{}
+	partitions = append(
+		partitions,
+		simulator.Partition{
+			Iteration: matchIteration,
 			ParamsFromUpstreamPartition: map[string]int{
-				"rates": 0,
+				"your_player_1_state":   0,
+				"your_player_2_state":   1,
+				"your_player_3_state":   2,
+				"your_player_4_state":   3,
+				"your_player_5_state":   4,
+				"your_player_6_state":   5,
+				"your_player_7_state":   6,
+				"your_player_8_state":   7,
+				"your_player_9_state":   8,
+				"your_player_10_state":  9,
+				"other_player_1_state":  10,
+				"other_player_2_state":  11,
+				"other_player_3_state":  12,
+				"other_player_4_state":  13,
+				"other_player_5_state":  14,
+				"other_player_6_state":  15,
+				"other_player_7_state":  16,
+				"other_player_8_state":  17,
+				"other_player_9_state":  18,
+				"other_player_10_state": 19,
 			},
 		},
-	}
-	for index, partition := range partitions {
-		partition.Iteration.Configure(index, settings)
+	)
+	for i, partition := range partitions {
+		partition.Iteration.Configure(i, settings)
 	}
 	implementations := &simulator.Implementations{
 		Partitions:      partitions,
@@ -65,7 +141,7 @@ func main() {
 		TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
 			MaxNumberOfSteps: 100,
 		},
-		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
+		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 0.05},
 	}
 	simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }

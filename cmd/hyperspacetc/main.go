@@ -10,30 +10,7 @@ import (
 
 func main() {
 	settings := &simulator.Settings{
-		OtherParams: []*simulator.OtherParams{
-			{
-				FloatParams: map[string][]float64{
-					"param_values": {1.0, 1.0, 1.0},
-				},
-				IntParams: map[string][]int64{},
-			},
-			{
-				FloatParams: map[string][]float64{
-					"rates":        {0.5, 1.0, 0.8, 1.0, 1.1},
-					"gamma_alphas": {1.0, 2.5, 3.0, 1.8, 1.0},
-					"gamma_betas":  {2.0, 1.0, 4.1, 2.0, 1.2},
-				},
-				IntParams: map[string][]int64{},
-			},
-			{
-				FloatParams: map[string][]float64{
-					"rates":        {1.5, 0.2, 0.6},
-					"gamma_alphas": {2.3, 5.1, 2.0},
-					"gamma_betas":  {2.0, 1.5, 1.1},
-				},
-				IntParams: map[string][]int64{},
-			},
-		},
+		Params: []simulator.Params{},
 		InitStateValues: [][]float64{
 			{1.0, 1.0, 1.0},
 			{0.0, 0.0, 0.0, 0.0, 0.0},
@@ -46,13 +23,33 @@ func main() {
 		TimestepsHistoryDepth: 2,
 	}
 	partitions := []simulator.Partition{
-		{Iteration: &simulator.ParamValuesIteration{}},
-		{Iteration: &examples.SpacecraftFollowingLaneIteration{}},
 		{
-			Iteration: &simulator.ConstantValuesIteration{},
+			Iteration: &examples.SpacecraftLaneCountIteration{},
+		},
+		{
+			Iteration: &examples.SpacecraftLaneCountIteration{},
+		},
+		{
+			Iteration: &examples.SpacecraftLaneCountIteration{},
+		},
+		{
+			Iteration: &examples.SpacecraftLaneConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
-				"rates": 0,
+				"partition_0_input_count": 0,
+				"partition_1_input_count": 1,
+				"partition_2_input_count": 2,
 			},
+			ParamsFromIndices: map[string][]int{
+				"partition_0_input_count": {1},
+				"partition_1_input_count": {1},
+				"partition_2_input_count": {1},
+			},
+		},
+		{
+			Iteration: &examples.SpacecraftLaneCountIteration{},
+		},
+		{
+			Iteration: &examples.SpacecraftLaneCountIteration{},
 		},
 	}
 	for index, partition := range partitions {

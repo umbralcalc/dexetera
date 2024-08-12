@@ -59,7 +59,7 @@ func GenerateStepClosure(
 				panic(err)
 			}
 			coordinator.Iterators[websocketPartitionIndex].
-				Params.FloatParams["param_values"] = actionState.Values
+				Params["param_values"] = actionState.Values
 		}
 		coordinator.Step(wg)
 		return nil
