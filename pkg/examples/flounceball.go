@@ -59,6 +59,9 @@ func (c *Coordinates) Update(
 	speed float64,
 	timestep float64,
 ) {
+	if *projCoords == *c {
+		return
+	}
 	// dx = r_p * cos Q_p - r * cos Q
 	// dy = r_p * sin Q_p - r * sin Q
 	// dx^2 + dy^2 = r_p^2 + r^2 - 2 * (r_p * r) * cos (Q_p - Q)
