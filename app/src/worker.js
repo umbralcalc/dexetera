@@ -7,11 +7,15 @@ let socket;
 let wasmInstance;
 let reconnectInterval = 2000; // 2 seconds
 let isConnected = false;
+let debugMode = false;
+let serverPartitionIndices = [0];
 
 self.onmessage = async function(event) {
     if (event.data.action === 'start') {
         await loadWasm(event.data.wasmBinary);
-        startWebSocketClient(event.data.serverPartitionIndices);
+        debugMode = event.data.debugMode;
+        serverPartitionIndices = event.data.serverPartitionIndices;
+        startWebSocketClient();
     }
 };
 
@@ -22,7 +26,7 @@ async function loadWasm(wasmBinary) {
     wasmInstance = result.instance;
 }
 
-function startWebSocketClient(serverPartitionIndices) {
+function startWebSocketClient() {
     const socket = new WebSocket('ws://localhost:2112');
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
@@ -31,17 +35,24 @@ function startWebSocketClient(serverPartitionIndices) {
         stepSimulation(handlePartitionState, null);
     };
     socket.onmessage = async function(event) {
-        // const message = proto.State.deserializeBinary(new Uint8Array(event.data));
-        // console.log(message.getValuesList());
+        if (debugMode) {
+            const message = proto.State.deserializeBinary(new Uint8Array(event.data));
+            console.log("*******************************************************");
+            console.log("Client received values:", message.getValuesList());
+        }
         stepSimulation(handlePartitionState, new Uint8Array(event.data));
     };
     socket.onclose = function() {
-        console.log('WebSocket connection closed.');
+        if (debugMode) {
+            console.log('WebSocket connection closed.');
+        }
         isConnected = false;
         reconnect();
     };
     socket.onerror = function(error) {
-        console.error('WebSocket error:', error);
+        if (debugMode) {
+            console.error('WebSocket error:', error);
+        }
         isConnected = false;
         reconnect();
     };
@@ -51,10 +62,12 @@ function startWebSocketClient(serverPartitionIndices) {
         timesteps = message.getCumulativeTimesteps();
         partitionIndex = message.getPartitionIndex();
         state = message.getState().getValuesList();
-        console.log("-------------------------------------------------------");
-        console.log("Cumulative Timesteps:", timesteps);
-        console.log("Partition Index:", partitionIndex);
-        console.log("State:", state);
+        if (debugMode) {
+            console.log("-------------------------------------------------------");
+            console.log("Cumulative Timesteps:", timesteps);
+            console.log("Partition Index:", partitionIndex);
+            console.log("State:", state);
+        }
         // Send the data to the main display thread
         self.postMessage({
             type: 'partitionState',
@@ -73,7 +86,9 @@ function startWebSocketClient(serverPartitionIndices) {
 
 function reconnect() {
     if (!isConnected) {
-        console.log(`Attempting to reconnect in ${reconnectInterval / 1000} seconds...`);
+        if (debugMode) {
+            console.log(`Attempting to reconnect in ${reconnectInterval / 1000} seconds...`);
+        }
         setTimeout(startWebSocketClient, reconnectInterval);
     }
 }

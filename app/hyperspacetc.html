@@ -63,10 +63,25 @@ if __name__ == "__main__":
     <script>
         document.getElementById('startButton').addEventListener('click', () => {
             const worker = new Worker('src/worker.js');
-            worker.postMessage({ action: 'start', wasmBinary: 'hyperspacetc/main.wasm' });
+            worker.onmessage = function(event) {
+                if (event.data.type === 'partitionState') {
+                    const data = event.data.data;
+                    updateViz(data);
+                }
+            };
+            worker.postMessage({ 
+                action: 'start', 
+                wasmBinary: 'hyperspacetc/main.wasm',
+                serverPartitionIndices: [0],
+                debugMode: false
+            });
             document.getElementById('bkg').classList.remove('blurred');
             document.getElementById('overlay').style.display = 'none';
         });
+        function updateViz(data) {
+            // TODO: Add viz code here...
+            console.log('Updating Viz:', data);
+        }
     </script>
 </body>
 </html>
