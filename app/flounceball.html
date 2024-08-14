@@ -130,10 +130,15 @@ if __name__ == "__main__":
                     playerDot.style.position = 'absolute';
                     playerDot.style.width = '10px';
                     playerDot.style.height = '10px';
-                    playerDot.style.backgroundColor = 'red'; // or any color you like
+                    if (partitionIndex <= 10) {
+                        playerDot.style.backgroundColor = 'red';
+                    } else {
+                        playerDot.style.backgroundColor = 'blue';
+                    }
                     playerDot.style.borderRadius = '50%';
                     document.getElementById('pitch').appendChild(playerDot);
                 }
+                // TODO: Transform from radial and angular here with origin at image centre...
                 playerDot.style.left = `${state[0]}px`;
                 playerDot.style.top = `${state[1]}px`;
             }
