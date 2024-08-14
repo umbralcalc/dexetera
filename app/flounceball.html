@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="pitch" class="blurred">
-        <img src="assets/flounceball-pitch.svg" alt="Pitch" id="pitch-image">
+        <img src="assets/flounceball-pitch.svg" alt="Pitch" id="pitchImage">
     </div>
     <div id="overlay">
         <div class="panels-container">
@@ -22,7 +22,8 @@
                 <p>3. Defensive players are not allowed to touch the ball, but they may distrupt any of the attacking side players who are near the ball.</p>
                 <p>4. Player substitutions may occur continuously throughout the match and there is no limit to them.</p>
                 <p>5. The game takes place on a circular field and if the ball leaves this area at any time, then the attacking team possession is ended immediately.</p>
-                <p>6. A match is 40 minutes of continuous play, without stoppages.</p>
+                <p>6. Possession also changes when the ball drops to the ground, at which point a restart occurs with the ball in the middle of the pitch.</p>
+                <p>7. A match is 40 minutes of continuous play, without stoppages.</p>
             </div>
             <div class="panel">
                 <h2>How to play:</h2>
@@ -86,8 +87,56 @@ if __name__ == "__main__":
             document.getElementById('overlay').style.display = 'none';
         });
         function updateViz(data) {
-            // TODO: Add viz code here...
-            console.log('Updating Viz:', data);
+            const timesteps = data.timesteps;
+            const partitionIndex = data.partitionIndex;
+            const state = data.state;
+
+            // Time display in the top left corner
+            if (partitionIndex === 21) {
+                const timeDisplay = document.getElementById('timeDisplay');
+                if (!timeDisplay) {
+                    const newTimeDisplay = document.createElement('div');
+                    newTimeDisplay.id = 'timeDisplay';
+                    newTimeDisplay.style.position = 'absolute';
+                    newTimeDisplay.style.top = '10px';
+                    newTimeDisplay.style.left = '10px';
+                    newTimeDisplay.style.color = '#FFF';
+                    document.getElementById('pitch').appendChild(newTimeDisplay);
+                }
+                document.getElementById('timeDisplay').textContent = `Time: ${timesteps}`;
+                
+                // Scores update
+                const scoreDisplay = document.getElementById('scoreDisplay');
+                if (!scoreDisplay) {
+                    const newScoreDisplay = document.createElement('div');
+                    newScoreDisplay.id = 'scoreDisplay';
+                    newScoreDisplay.style.position = 'absolute';
+                    newScoreDisplay.style.top = '30px';
+                    newScoreDisplay.style.left = '10px';
+                    newScoreDisplay.style.color = '#FFF';
+                    document.getElementById('pitch').appendChild(newScoreDisplay);
+                }
+                document.getElementById('scoreDisplay').textContent = 
+                    `Your Team Total Air Time: ${state[2]} | Other Team Total Air Time: ${state[3]}`;
+            }
+
+            // Player positions update
+            if (partitionIndex >= 1 && partitionIndex <= 20) {
+                const playerDotId = `playerDot${partitionIndex}`;
+                let playerDot = document.getElementById(playerDotId);
+                if (!playerDot) {
+                    playerDot = document.createElement('div');
+                    playerDot.id = playerDotId;
+                    playerDot.style.position = 'absolute';
+                    playerDot.style.width = '10px';
+                    playerDot.style.height = '10px';
+                    playerDot.style.backgroundColor = 'red'; // or any color you like
+                    playerDot.style.borderRadius = '50%';
+                    document.getElementById('pitch').appendChild(playerDot);
+                }
+                playerDot.style.left = `${state[0]}px`;
+                playerDot.style.top = `${state[1]}px`;
+            }
         }
     </script>
 </body>

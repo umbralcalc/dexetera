@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	totalMatchSeconds := 2400.0
+	timeStepsizeSeconds := 0.05
 	seeds := make([]uint64, 0)
 	stateWidths := make([]int, 0)
 	stateHistoryDepths := make([]int, 0)
@@ -133,9 +135,9 @@ func main() {
 		OutputCondition: &simulator.EveryStepOutputCondition{},
 		OutputFunction:  &simulator.NilOutputFunction{},
 		TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
-			MaxNumberOfSteps: 100,
+			MaxNumberOfSteps: int(totalMatchSeconds / timeStepsizeSeconds),
 		},
-		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 0.05},
+		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: timeStepsizeSeconds},
 	}
 	simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }
