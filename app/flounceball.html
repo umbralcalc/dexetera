@@ -92,36 +92,57 @@ if __name__ == "__main__":
             const partitionIndex = data.partitionIndex;
             const state = data.state;
 
-            // Time display in the top left corner
+            // Time and score display in the top left corner
             if (partitionIndex === 21) {
-                const timeDisplay = document.getElementById('timeDisplay');
+                const pitch = document.getElementById('pitch');
+
+                // Time display setup
+                let timeDisplay = document.getElementById('timeDisplay');
                 if (!timeDisplay) {
-                    const newTimeDisplay = document.createElement('div');
-                    newTimeDisplay.id = 'timeDisplay';
-                    newTimeDisplay.style.position = 'absolute';
-                    newTimeDisplay.style.top = '10px';
-                    newTimeDisplay.style.left = '10px';
-                    newTimeDisplay.style.color = '#FFF';
-                    document.getElementById('pitch').appendChild(newTimeDisplay);
+                    timeDisplay = document.createElement('div');
+                    timeDisplay.id = 'timeDisplay';
+                    timeDisplay.style.position = 'absolute';
+                    timeDisplay.style.top = '10px';
+                    timeDisplay.style.left = '10px';
+                    timeDisplay.style.color = '#FFF';
+                    timeDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    timeDisplay.style.padding = '10px';
+                    timeDisplay.style.borderRadius = '8px';
+                    timeDisplay.style.fontSize = '18px';
+                    timeDisplay.style.fontFamily = 'Arial, sans-serif';
+                    timeDisplay.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                    timeDisplay.style.transition = 'all 0.3s ease';
+                    pitch.appendChild(timeDisplay);
                 }
+
                 let minutes = Math.floor(timesteps / 60);
                 let seconds = Math.floor(timesteps % 60);
                 seconds = seconds.toString().padStart(2, '0');
-                document.getElementById('timeDisplay').textContent = `Time: ${minutes}:${seconds}`;
-                
-                // Scores update
-                const scoreDisplay = document.getElementById('scoreDisplay');
+                timeDisplay.textContent = `Time: ${minutes}:${seconds}`;
+
+                // Score display setup
+                let scoreDisplay = document.getElementById('scoreDisplay');
                 if (!scoreDisplay) {
-                    const newScoreDisplay = document.createElement('div');
-                    newScoreDisplay.id = 'scoreDisplay';
-                    newScoreDisplay.style.position = 'absolute';
-                    newScoreDisplay.style.top = '30px';
-                    newScoreDisplay.style.left = '10px';
-                    newScoreDisplay.style.color = '#FFF';
-                    document.getElementById('pitch').appendChild(newScoreDisplay);
+                    scoreDisplay = document.createElement('div');
+                    scoreDisplay.id = 'scoreDisplay';
+                    scoreDisplay.style.position = 'absolute';
+                    scoreDisplay.style.top = '60px';
+                    scoreDisplay.style.left = '10px';
+                    scoreDisplay.style.color = '#FFF';
+                    scoreDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    scoreDisplay.style.padding = '10px';
+                    scoreDisplay.style.borderRadius = '8px';
+                    scoreDisplay.style.fontSize = '18px';
+                    scoreDisplay.style.fontFamily = 'Arial, sans-serif';
+                    scoreDisplay.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                    scoreDisplay.style.transition = 'all 0.3s ease';
+                    pitch.appendChild(scoreDisplay);
                 }
-                document.getElementById('scoreDisplay').textContent = 
-                    `Your Team: ${state[2].toFixed(2)} | Other Team: ${state[3].toFixed(2)}`;
+
+                scoreDisplay.innerHTML = `
+                    <span style="color: red;">Your Team: ${state[2].toFixed(2)}</span> | 
+                    <span style="color: blue;">Other Team: ${state[3].toFixed(2)}</span>
+                `;
             }
 
             // Player positions update
