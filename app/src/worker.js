@@ -5,6 +5,7 @@ self.importScripts('partition_state_pb.js');
 let go;
 let socket;
 let wasmInstance;
+let stopAtSimTime;
 let reconnectInterval = 2000; // 2 seconds
 let isConnected = false;
 let debugMode = false;
@@ -14,6 +15,7 @@ self.onmessage = async function(event) {
     if (event.data.action === 'start') {
         await loadWasm(event.data.wasmBinary);
         debugMode = event.data.debugMode;
+        stopAtSimTime = event.data.stopAtSimTime;
         serverPartitionIndices = event.data.serverPartitionIndices;
         startWebSocketClient();
     }
@@ -59,6 +61,7 @@ function startWebSocketClient() {
     // Callback function
     function handlePartitionState(data) {
         const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
+        if (stopAtSimTime <= message.getCumulativeTimesteps()) return;
         timesteps = message.getCumulativeTimesteps();
         partitionIndex = message.getPartitionIndex();
         state = message.getState().getValuesList();
