@@ -147,6 +147,11 @@ if __name__ == "__main__":
 
             // Player positions update
             if (partitionIndex >= 1 && partitionIndex <= 20) {
+                const pitch = document.getElementById('pitch');
+                const svgWidth = pitch.clientWidth;
+                const svgHeight = pitch.clientHeight;
+                const centerX = svgWidth / 2;
+                const centerY = svgHeight / 2;
                 const playerDotId = `playerDot${partitionIndex}`;
                 let playerDot = document.getElementById(playerDotId);
                 if (!playerDot) {
@@ -163,9 +168,14 @@ if __name__ == "__main__":
                     playerDot.style.borderRadius = '50%';
                     document.getElementById('pitch').appendChild(playerDot);
                 }
-                // TODO: Transform from radial and angular here with origin at image centre...
-                playerDot.style.left = `${state[0]}px`;
-                playerDot.style.top = `${state[1]}px`;
+                // Transform from radial and angular here with origin at image centre
+                const magicNumber = 3; // radial coord scaling to svg image
+                const r = state[0] * magicNumber;
+                const theta = state[1];
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                playerDot.style.left = `${centerX + x - 5}px`;
+                playerDot.style.top = `${centerY - y - 5}px`;
             }
         }
     </script>
