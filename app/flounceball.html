@@ -13,6 +13,10 @@
     <div id="pitch" class="blurred">
         <img src="assets/flounceball-pitch.svg" alt="Pitch" id="pitchImage">
     </div>
+    <div id="speedControl" style="margin-top: 20px; position: absolute; top: 100px; left: 10px; display: none;">
+        <label for="speedSlider">Play Speed:</label>
+        <input type="range" id="speedSlider" min="0.00" max="1.00" step="0.05" value="0.50">
+    </div>
     <div id="overlay">
         <div class="panels-container">
             <div class="panel">
@@ -86,6 +90,15 @@ if __name__ == "__main__":
             });
             document.getElementById('pitch').classList.remove('blurred');
             document.getElementById('overlay').style.display = 'none';
+
+            // Init the speed slider
+            document.getElementById('speedControl').style.display = 'block';
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValueDisplay = document.getElementById('speedValue');
+            speedSlider.addEventListener('input', function() {
+                const playSpeed = parseFloat(speedSlider.value);
+                worker.postMessage({ action: 'setPlaySpeed', playSpeed: playSpeed });
+            });
         });
         function updateViz(data) {
             const timesteps = data.timesteps;
@@ -95,6 +108,33 @@ if __name__ == "__main__":
             // Time and score display in the top left corner
             if (partitionIndex === 21) {
                 const pitch = document.getElementById('pitch');
+                const svgWidth = pitch.clientWidth;
+                const svgHeight = pitch.clientHeight;
+                const centerX = svgWidth / 2;
+                const centerY = svgHeight / 2;
+
+                // Create or select the ball element
+                let ball = document.getElementById('ball');
+                if (!ball) {
+                    ball = document.createElement('div');
+                    ball.id = 'ball';
+                    ball.style.position = 'absolute';
+                    ball.style.width = '15px';
+                    ball.style.height = '15px';
+                    ball.style.borderRadius = '50%';
+                    ball.style.backgroundColor = 'yellow';
+                    ball.style.border = '2px solid black';
+                    ball.style.zIndex = '1000';
+                    pitch.appendChild(ball);
+                }
+                // Transform from radial and angular here with origin at image centre
+                const magicNumber = 3.0; // radial coord scaling to svg image
+                const r = state[0] * magicNumber;
+                const theta = state[7];
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                ball.style.left = `${centerX + x - 5}px`;
+                ball.style.top = `${centerY - y - 5}px`;
 
                 // Time display setup
                 let timeDisplay = document.getElementById('timeDisplay');
@@ -169,7 +209,7 @@ if __name__ == "__main__":
                     document.getElementById('pitch').appendChild(playerDot);
                 }
                 // Transform from radial and angular here with origin at image centre
-                const magicNumber = 3; // radial coord scaling to svg image
+                const magicNumber = 3.0; // radial coord scaling to svg image
                 const r = state[0] * magicNumber;
                 const theta = state[1];
                 const x = r * Math.cos(theta);

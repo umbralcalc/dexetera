@@ -45,6 +45,52 @@ body, html {
     font-family: "Oxygen", sans-serif;
 }
 
+#speedControl {
+    position: absolute;
+    top: 160px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between label and slider */
+}
+
+#speedControl label {
+    font-family: 'Oxygen', sans-serif;
+    font-size: 18px;
+    color: #FFF;
+}
+
+#speedSlider {
+    -webkit-appearance: none;
+    width: 150px;
+    height: 5px;
+    background: #FFF;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+#speedSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #FFF;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#speedSlider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #FFF;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 .panel {
     margin: 20px;
     padding: 20px;

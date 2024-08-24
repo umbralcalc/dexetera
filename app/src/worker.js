@@ -6,6 +6,7 @@ let go;
 let socket;
 let wasmInstance;
 let stopAtSimTime;
+let playSpeed = 0.50;
 let reconnectInterval = 2000; // 2 seconds
 let isConnected = false;
 let debugMode = false;
@@ -18,6 +19,8 @@ self.onmessage = async function(event) {
         stopAtSimTime = event.data.stopAtSimTime;
         serverPartitionIndices = event.data.serverPartitionIndices;
         startWebSocketClient();
+    } else if (event.data.action == 'setPlaySpeed') {
+        playSpeed = event.data.playSpeed;
     }
 };
 
@@ -42,6 +45,7 @@ function startWebSocketClient() {
             console.log("*******************************************************");
             console.log("Client received values:", message.getValuesList());
         }
+        await sleep(Math.floor(500 * (1.0 - playSpeed)));
         stepSimulation(handlePartitionState, new Uint8Array(event.data));
     };
     socket.onclose = function() {
@@ -85,6 +89,10 @@ function startWebSocketClient() {
             socket.send(data);
         }
     };
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function reconnect() {
