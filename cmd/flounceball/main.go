@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	totalMatchSeconds := 2400.0
-	timeStepsizeSeconds := 0.05
+	totalMatchSeconds := 300.0
+	timeStepsizeSeconds := 0.01
 	seeds := make([]uint64, 0)
 	stateWidths := make([]int, 0)
 	stateHistoryDepths := make([]int, 0)
@@ -36,12 +36,12 @@ func main() {
 		"match_state_partition_index":         {21},
 		"opposition_player_partition_indices": {11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 		"player_space_finding_talent":         {7},
-		"player_ball_interaction_speed":       {0.5},
+		"player_ball_interaction_speed":       {0.1},
 		"player_ball_interaction_inaccuracy":  {0.1},
 		"team_possession_state_value":         {0},
 		"team_attacking_distance_threshold":   {10.0},
 		"team_defensive_distance_threshold":   {10.0},
-		"player_movement_speed":               {0.1},
+		"player_movement_speed":               {0.01},
 	}
 	index := len(partitions)
 	radius := 0.0
@@ -70,12 +70,12 @@ func main() {
 		"match_state_partition_index":         {21},
 		"opposition_player_partition_indices": {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		"player_space_finding_talent":         {7},
-		"player_ball_interaction_speed":       {0.5},
+		"player_ball_interaction_speed":       {0.1},
 		"player_ball_interaction_inaccuracy":  {0.1},
 		"team_possession_state_value":         {1},
 		"team_attacking_distance_threshold":   {10.0},
 		"team_defensive_distance_threshold":   {10.0},
-		"player_movement_speed":               {0.1},
+		"player_movement_speed":               {0.01},
 	}
 	radius = 0.0
 	angle = math.Pi
@@ -107,7 +107,7 @@ func main() {
 		[]float64{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 	)
 	matchTemplateParams := simulator.Params{
-		"max_ball_falling_time": {5.0},
+		"max_ball_falling_time": {1.0},
 	}
 	params = append(params, matchTemplateParams)
 	matchIteration := &examples.FlounceballMatchStateIteration{}
