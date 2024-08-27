@@ -20,7 +20,6 @@ class FlounceballActionTaker(ActionTaker):
         Also check out the manager cheatsheet if needed:
         umbralcalc.github.io/dexetera/cmd/flounceball/cheatsheet.md
         """
-        print(states["latest_match_state"])
         return [s + 0.1 for s in states["latest_manager_actions"]]
 
 
