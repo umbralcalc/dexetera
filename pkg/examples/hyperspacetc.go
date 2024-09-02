@@ -68,10 +68,10 @@ func (s *SpacecraftLineCountIteration) Iterate(
 	outputState := stateHistory.Values.RawRowView(0)
 
 	// Update the upstream entries into the line from a line connector if it exists
-	if connectorParts, ok := params["upstream_line_connector_partition"]; ok {
+	if connectorParts, ok := params["upstream_partition"]; ok {
 		outputState[LineCountStateValueIndices["Upstream Entry Count"]] =
 			stateHistories[int(connectorParts[0])].Values.At(
-				0, int(params["upstream_line_connector_value_index"][0]),
+				0, int(params["upstream_value_index"][0]),
 			)
 	}
 
