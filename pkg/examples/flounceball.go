@@ -9,12 +9,6 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-/*
-1. You're a manager of a mysterious sport named 'flounceball' with unknown rules.
-2. Some players will perform poorly, others will perform really well, depending entirely on their pitch location.
-3. You must continuously teleport your players to positions on the circular field in the hope of collecting more points than the opposition team.
-*/
-
 // PitchRadiusMetres is the radius of the circular pitch.
 const PitchRadiusMetres = 100.0
 
