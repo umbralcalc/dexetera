@@ -15,16 +15,16 @@ func TestHyperspacetc(t *testing.T) {
 			)
 			partitions := []simulator.Partition{
 				{
-					Iteration: &SpacecraftLaneCountIteration{},
+					Iteration: &SpacecraftLineCountIteration{},
 				},
 				{
-					Iteration: &SpacecraftLaneCountIteration{},
+					Iteration: &SpacecraftLineCountIteration{},
 				},
 				{
-					Iteration: &SpacecraftLaneCountIteration{},
+					Iteration: &SpacecraftLineCountIteration{},
 				},
 				{
-					Iteration: &SpacecraftLaneConnectorIteration{},
+					Iteration: &SpacecraftLineConnectorIteration{},
 					ParamsFromUpstreamPartition: map[string]int{
 						"partition_0_input_count": 0,
 						"partition_1_input_count": 1,
@@ -37,10 +37,10 @@ func TestHyperspacetc(t *testing.T) {
 					},
 				},
 				{
-					Iteration: &SpacecraftLaneCountIteration{},
+					Iteration: &SpacecraftLineCountIteration{},
 				},
 				{
-					Iteration: &SpacecraftLaneCountIteration{},
+					Iteration: &SpacecraftLineCountIteration{},
 				},
 			}
 			for index, partition := range partitions {

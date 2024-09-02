@@ -9,9 +9,9 @@ import (
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-// LaneCountSateValueIndices is a mapping which helps with describing
-// the meaning of the values for each spacecraft lane count state index.
-var LaneCountStateValueIndices = map[string]int{
+// LineCountSateValueIndices is a mapping which helps with describing
+// the meaning of the values for each spacecraft line count state index.
+var LineCountStateValueIndices = map[string]int{
 	"Upstream Entry Count":                   0,
 	"Downstream Exit Count":                  1,
 	"Downstream Queue Size":                  2,
@@ -30,24 +30,24 @@ func inverseGaussianCdf(x float64, mu float64, lambda float64) float64 {
 		(math.Exp(2.0*lambda/mu) * standardNormalCdf(-math.Sqrt(lambda/x)*((x/mu)+1.0)))
 }
 
-// muFromParams returns the mu value derived from lane length and spacecraft speed.
-func muFromParams(laneLength float64, speed float64) float64 {
-	return laneLength / speed
+// muFromParams returns the mu value derived from line length and spacecraft speed.
+func muFromParams(lineLength float64, speed float64) float64 {
+	return lineLength / speed
 }
 
-// lambdaFromParams returns the lambda value derived from lane length and spacecraft
+// lambdaFromParams returns the lambda value derived from line length and spacecraft
 // speed variance over their journey.
-func lambdaFromParams(laneLength float64, speedVariance float64) float64 {
-	return laneLength * laneLength / speedVariance
+func lambdaFromParams(lineLength float64, speedVariance float64) float64 {
+	return lineLength * lineLength / speedVariance
 }
 
-// SpacecraftLaneCountIteration iterates the state of a hyperspace lane in the
+// SpacecraftLineCountIteration iterates the state of a hyperspace line in the
 // Hyperspace Traffic Control example.
-type SpacecraftLaneCountIteration struct {
+type SpacecraftLineCountIteration struct {
 	uniformDist *distuv.Uniform
 }
 
-func (s *SpacecraftLaneCountIteration) Configure(
+func (s *SpacecraftLineCountIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
@@ -58,7 +58,7 @@ func (s *SpacecraftLaneCountIteration) Configure(
 	}
 }
 
-func (s *SpacecraftLaneCountIteration) Iterate(
+func (s *SpacecraftLineCountIteration) Iterate(
 	params simulator.Params,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
@@ -67,24 +67,24 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 	stateHistory := stateHistories[partitionIndex]
 	outputState := stateHistory.Values.RawRowView(0)
 
-	// Update the upstream entries into the lane from a lane connector if it exists
-	if connectorParts, ok := params["upstream_lane_connector_partition"]; ok {
-		outputState[LaneCountStateValueIndices["Upstream Entry Count"]] =
+	// Update the upstream entries into the line from a line connector if it exists
+	if connectorParts, ok := params["upstream_line_connector_partition"]; ok {
+		outputState[LineCountStateValueIndices["Upstream Entry Count"]] =
 			stateHistories[int(connectorParts[0])].Values.At(
-				0, int(params["upstream_lane_connector_value_index"][0]),
+				0, int(params["upstream_line_connector_value_index"][0]),
 			)
 	}
 
 	// Update the upstream arrivals into the queue, assuming no overtaking
 	// is allowed in this simple model
 	minEntryTimeIndex := int(stateHistory.Values.At(0,
-		LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
+		LineCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
 	for i := minEntryTimeIndex - 1; i >= 1; i-- {
 		if stateHistory.Values.At(
-			i, LaneCountStateValueIndices["Upstream Entry Count"]) > 0.0 {
+			i, LineCountStateValueIndices["Upstream Entry Count"]) > 0.0 {
 			queueSize := stateHistory.Values.At(
-				0, LaneCountStateValueIndices["Downstream Queue Size"])
-			effectiveLaneLength := params["lane_length"][0] -
+				0, LineCountStateValueIndices["Downstream Queue Size"])
+			effectiveLineLength := params["line_length"][0] -
 				(params["spacecraft_length"][0] * queueSize)
 			timeSinceEntry := timestepsHistory.NextIncrement +
 				timestepsHistory.Values.AtVec(0) - timestepsHistory.Values.AtVec(i)
@@ -92,14 +92,14 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 			// reached the back of the queue?
 			if s.uniformDist.Rand() < inverseGaussianCdf(
 				timeSinceEntry,
-				muFromParams(effectiveLaneLength, params["spacecraft_speed"][0]),
+				muFromParams(effectiveLineLength, params["spacecraft_speed"][0]),
 				lambdaFromParams(
-					effectiveLaneLength, params["spacecraft_speed_variance"][0]),
+					effectiveLineLength, params["spacecraft_speed_variance"][0]),
 			) {
 				// If it has, then update the state values accordingly
-				outputState[LaneCountStateValueIndices["Downstream Queue Size"]] +=
+				outputState[LineCountStateValueIndices["Downstream Queue Size"]] +=
 					queueSize + 1
-				outputState[LaneCountStateValueIndices["Min Upstream Entry Time Index In Queue"]] =
+				outputState[LineCountStateValueIndices["Min Upstream Entry Time Index In Queue"]] =
 					float64(i)
 				break
 			}
@@ -107,35 +107,35 @@ func (s *SpacecraftLaneCountIteration) Iterate(
 		i += 1
 	}
 
-	// Update the downstream departures from the queue into a lane
-	// connector which should be conditional on the lane having allowed flow
-	outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 0.0
+	// Update the downstream departures from the queue into a line
+	// connector which should be conditional on the line having allowed flow
+	outputState[LineCountStateValueIndices["Downstream Exit Count"]] = 0.0
 	if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
-		0, LaneCountStateValueIndices["Downstream Queue Size"]) > 0.0 {
+		0, LineCountStateValueIndices["Downstream Queue Size"]) > 0.0 {
 		if stateHistory.Values.At(
-			0, LaneCountStateValueIndices["Time Since Last Exit"],
+			0, LineCountStateValueIndices["Time Since Last Exit"],
 		) > params["time_to_exit"][0] {
-			outputState[LaneCountStateValueIndices["Downstream Exit Count"]] = 1.0
-			outputState[LaneCountStateValueIndices["Downstream Queue Size"]] -= 1.0
-			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
+			outputState[LineCountStateValueIndices["Downstream Exit Count"]] = 1.0
+			outputState[LineCountStateValueIndices["Downstream Queue Size"]] -= 1.0
+			outputState[LineCountStateValueIndices["Time Since Last Exit"]] = 0.0
 		} else {
-			outputState[LaneCountStateValueIndices["Time Since Last Exit"]] +=
+			outputState[LineCountStateValueIndices["Time Since Last Exit"]] +=
 				timestepsHistory.NextIncrement
 		}
 	} else {
-		outputState[LaneCountStateValueIndices["Time Since Last Exit"]] = 0.0
+		outputState[LineCountStateValueIndices["Time Since Last Exit"]] = 0.0
 	}
 
 	return outputState
 }
 
-// SpacecraftLaneConnectorIteration iterates the state of a connection between
-// hyperspace lanes in the Hyperspace Traffic Control example.
-type SpacecraftLaneConnectorIteration struct {
+// SpacecraftLineConnectorIteration iterates the state of a connection between
+// hyperspace lines in the Hyperspace Traffic Control example.
+type SpacecraftLineConnectorIteration struct {
 	categoricalDist distuv.Categorical
 }
 
-func (s *SpacecraftLaneConnectorIteration) Configure(
+func (s *SpacecraftLineConnectorIteration) Configure(
 	partitionIndex int,
 	settings *simulator.Settings,
 ) {
@@ -149,7 +149,7 @@ func (s *SpacecraftLaneConnectorIteration) Configure(
 	)
 }
 
-func (s *SpacecraftLaneConnectorIteration) Iterate(
+func (s *SpacecraftLineConnectorIteration) Iterate(
 	params simulator.Params,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,

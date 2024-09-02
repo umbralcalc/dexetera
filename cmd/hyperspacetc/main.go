@@ -24,16 +24,16 @@ func main() {
 	}
 	partitions := []simulator.Partition{
 		{
-			Iteration: &examples.SpacecraftLaneCountIteration{},
+			Iteration: &examples.SpacecraftLineCountIteration{},
 		},
 		{
-			Iteration: &examples.SpacecraftLaneCountIteration{},
+			Iteration: &examples.SpacecraftLineCountIteration{},
 		},
 		{
-			Iteration: &examples.SpacecraftLaneCountIteration{},
+			Iteration: &examples.SpacecraftLineCountIteration{},
 		},
 		{
-			Iteration: &examples.SpacecraftLaneConnectorIteration{},
+			Iteration: &examples.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_0_input_count": 0,
 				"partition_1_input_count": 1,
@@ -46,10 +46,10 @@ func main() {
 			},
 		},
 		{
-			Iteration: &examples.SpacecraftLaneCountIteration{},
+			Iteration: &examples.SpacecraftLineCountIteration{},
 		},
 		{
-			Iteration: &examples.SpacecraftLaneCountIteration{},
+			Iteration: &examples.SpacecraftLineCountIteration{},
 		},
 	}
 	for index, partition := range partitions {
