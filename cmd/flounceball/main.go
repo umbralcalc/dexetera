@@ -14,102 +14,197 @@ import (
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
-func main() {
-	totalMatchSeconds := 300.0
-	timeStepsizeSeconds := 0.01
-	seeds := make([]uint64, 0)
-	stateWidths := make([]int, 0)
-	stateHistoryDepths := make([]int, 0)
-	initStateValues := make([][]float64, 0)
-	params := make([]simulator.Params, 0)
-	partitions := make([]simulator.Partition, 0)
-	matchStateParamsFromUpstreamPartition := make(map[string]int, 0)
-	seeds = append(seeds, 0)
-	stateWidths = append(stateWidths, 3)
-	stateHistoryDepths = append(stateHistoryDepths, 1)
-	initStateValues = append(initStateValues, []float64{0.0, 0.0, 0.0})
-	params = append(params, simulator.Params{"param_values": {0.0, 0.0, 0.0}})
-	partitions = append(
-		partitions,
-		simulator.Partition{Iteration: &simulator.ParamValuesIteration{}},
-	)
+type MatchPartitionConfig struct {
+	Partitions                            []simulator.Partition
+	MatchStateParamsFromUpstreamPartition map[string]int
+}
+
+func initEmptySettings() *simulator.Settings {
+	return &simulator.Settings{
+		Params:                make([]simulator.Params, 0),
+		InitStateValues:       make([][]float64, 0),
+		InitTimeValue:         0.0,
+		Seeds:                 make([]uint64, 0),
+		StateWidths:           make([]int, 0),
+		StateHistoryDepths:    make([]int, 0),
+		TimestepsHistoryDepth: 1,
+	}
+}
+
+func addActionTaker(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	settings.Seeds = append(settings.Seeds, 0)
+	settings.StateWidths = append(settings.StateWidths, 20)
+	settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
 	uniformDist := &distuv.Uniform{
 		Min: 0.0,
 		Max: 1.0,
 		Src: rand.NewSource(uint64(rand.Intn(10000))),
 	}
-	index := len(partitions)
+	initialActionValues := make([]float64, 0)
 	for i := 1; i < 11; i++ {
-		seeds = append(seeds, uint64(rand.Intn(10000)))
-		stateWidths = append(stateWidths, 2)
-		stateHistoryDepths = append(stateHistoryDepths, 1)
-		initStateValues = append(
-			initStateValues,
+		initialActionValues = append(
+			initialActionValues,
+			examples.PitchRadiusMetres*uniformDist.Rand(),
+		)
+		initialActionValues = append(
+			initialActionValues,
+			2.0*math.Pi*uniformDist.Rand(),
+		)
+	}
+	settings.InitStateValues = append(
+		settings.InitStateValues,
+		initialActionValues,
+	)
+	paramValues := initialActionValues
+	settings.Params = append(
+		settings.Params,
+		simulator.Params{"param_values": paramValues},
+	)
+	partitionConfig.Partitions = append(
+		partitionConfig.Partitions,
+		simulator.Partition{Iteration: &simulator.ParamValuesIteration{}},
+	)
+}
+
+func addYourPlayers(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	index := len(partitionConfig.Partitions)
+	uniformDist := &distuv.Uniform{
+		Min: 0.0,
+		Max: 1.0,
+		Src: rand.NewSource(uint64(rand.Intn(10000))),
+	}
+	for i := 1; i < 11; i++ {
+		settings.Seeds = append(settings.Seeds, uint64(rand.Intn(10000)))
+		settings.StateWidths = append(settings.StateWidths, 2)
+		settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
+		settings.InitStateValues = append(
+			settings.InitStateValues,
 			[]float64{
 				examples.PitchRadiusMetres * uniformDist.Rand(),
 				2.0 * math.Pi * uniformDist.Rand(),
 			},
 		)
-		params = append(params, simulator.Params{})
+		settings.Params = append(settings.Params, simulator.Params{})
 		yourPlayerIteration := &examples.FlounceballPlayerStateIteration{}
-		partitions = append(
-			partitions,
-			simulator.Partition{Iteration: yourPlayerIteration},
+		partitionConfig.Partitions = append(
+			partitionConfig.Partitions,
+			simulator.Partition{
+				Iteration: yourPlayerIteration,
+				ParamsFromUpstreamPartition: map[string]int{
+					"manager_directed_coordinates": 0,
+				},
+				ParamsFromIndices: map[string][]int{
+					"manager_directed_coordinates": {2 * (i - 1), 2*(i-1) + 1},
+				},
+			},
 		)
-		matchStateParamsFromUpstreamPartition["your_player_"+
+		partitionConfig.MatchStateParamsFromUpstreamPartition["your_player_"+
 			strconv.Itoa(i)+"_state"] = index
 		index += 1
 	}
+}
+
+func addOtherPlayers(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	index := len(partitionConfig.Partitions)
+	uniformDist := &distuv.Uniform{
+		Min: 0.0,
+		Max: 1.0,
+		Src: rand.NewSource(uint64(rand.Intn(10000))),
+	}
 	for i := 1; i < 11; i++ {
-		seeds = append(seeds, uint64(rand.Intn(10000)))
-		stateWidths = append(stateWidths, 2)
-		stateHistoryDepths = append(stateHistoryDepths, 1)
-		initStateValues = append(
-			initStateValues,
+		settings.Seeds = append(settings.Seeds, uint64(rand.Intn(10000)))
+		settings.StateWidths = append(settings.StateWidths, 2)
+		settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
+		settings.InitStateValues = append(
+			settings.InitStateValues,
 			[]float64{
 				examples.PitchRadiusMetres * uniformDist.Rand(),
 				2.0 * math.Pi * uniformDist.Rand(),
 			},
 		)
-		params = append(params, simulator.Params{})
+		settings.Params = append(settings.Params, simulator.Params{})
 		otherPlayerIteration := &examples.FlounceballPlayerStateIteration{}
-		partitions = append(
-			partitions,
+		partitionConfig.Partitions = append(
+			partitionConfig.Partitions,
 			simulator.Partition{Iteration: otherPlayerIteration},
 		)
-		matchStateParamsFromUpstreamPartition["other_player_"+
+		partitionConfig.MatchStateParamsFromUpstreamPartition["other_player_"+
 			strconv.Itoa(i)+"_state"] = index
 		index += 1
 	}
-	seeds = append(seeds, uint64(rand.Intn(10000)))
-	stateWidths = append(stateWidths, 2)
-	stateHistoryDepths = append(stateHistoryDepths, 1)
-	initStateValues = append(initStateValues, []float64{0.0, 0.0})
-	params = append(params, simulator.Params{})
+}
+
+func addChosenCoordsGenerator(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	index := len(partitionConfig.Partitions)
+	settings.Seeds = append(settings.Seeds, 0)
+	settings.StateWidths = append(settings.StateWidths, 2)
+	settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
+	settings.InitStateValues = append(
+		settings.InitStateValues,
+		[]float64{0.0, 0.0},
+	)
+	settings.Params = append(
+		settings.Params,
+		simulator.Params{"param_values": {0.0, 0.0}},
+	)
+	partitionConfig.Partitions = append(
+		partitionConfig.Partitions,
+		simulator.Partition{Iteration: &simulator.ParamValuesIteration{}},
+	)
+	partitionConfig.MatchStateParamsFromUpstreamPartition["chosen_coordinates"] = index
+}
+
+func addMatchState(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	settings.Seeds = append(settings.Seeds, uint64(rand.Intn(10000)))
+	settings.StateWidths = append(settings.StateWidths, 2)
+	settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
+	settings.InitStateValues = append(settings.InitStateValues, []float64{0.0, 0.0})
+	settings.Params = append(settings.Params, simulator.Params{"match_noise": {1.0}})
 	matchIteration := &examples.FlounceballMatchStateIteration{}
-	partitions = append(
-		partitions,
+	partitionConfig.Partitions = append(
+		partitionConfig.Partitions,
 		simulator.Partition{
 			Iteration:                   matchIteration,
-			ParamsFromUpstreamPartition: matchStateParamsFromUpstreamPartition,
+			ParamsFromUpstreamPartition: partitionConfig.MatchStateParamsFromUpstreamPartition,
 		},
 	)
-	settings := &simulator.Settings{
-		Params:                params,
-		InitStateValues:       initStateValues,
-		InitTimeValue:         0.0,
-		Seeds:                 seeds,
-		StateWidths:           stateWidths,
-		StateHistoryDepths:    stateHistoryDepths,
-		TimestepsHistoryDepth: 1,
+}
+
+func main() {
+	totalMatchSeconds := 300.0
+	timeStepsizeSeconds := 0.05
+	settings := initEmptySettings()
+	partitionConfig := &MatchPartitionConfig{
+		Partitions:                            make([]simulator.Partition, 0),
+		MatchStateParamsFromUpstreamPartition: make(map[string]int, 0),
 	}
-	for i, partition := range partitions {
+	addActionTaker(settings, partitionConfig)
+	addYourPlayers(settings, partitionConfig)
+	addOtherPlayers(settings, partitionConfig)
+	addChosenCoordsGenerator(settings, partitionConfig)
+	addMatchState(settings, partitionConfig)
+	for i, partition := range partitionConfig.Partitions {
 		partition.Iteration.Configure(i, settings)
 	}
 	implementations := &simulator.Implementations{
-		Partitions:      partitions,
+		Partitions:      partitionConfig.Partitions,
 		OutputCondition: &simulator.EveryStepOutputCondition{},
-		OutputFunction:  &simulator.NilOutputFunction{},
+		OutputFunction:  &simulator.StdoutOutputFunction{},
 		TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
 			MaxNumberOfSteps: int(totalMatchSeconds / timeStepsizeSeconds),
 		},

@@ -1,3 +1,4 @@
+import math, random, itertools # libs only needed for example
 from dexact.server import ActionTaker, launch_websocket_server
 
 
@@ -7,7 +8,7 @@ class FlounceballActionTaker(ActionTaker):
         """You can ignore this config property."""
         return {
             0: "latest_manager_actions",
-            21: "latest_match_state",
+            22: "latest_match_state",
         }
 
     def take_next_action(
@@ -20,7 +21,10 @@ class FlounceballActionTaker(ActionTaker):
         Also check out the manager cheatsheet if needed:
         umbralcalc.github.io/dexetera/cmd/flounceball/cheatsheet.md
         """
-        return [s + 0.1 for s in states["latest_manager_actions"]]
+        return list(itertools.chain(*[
+            (random.uniform(0, 100), random.uniform(0, 2*math.pi)) 
+            for _ in range(0, 10)
+        ]))
 
 
 if __name__ == "__main__":
