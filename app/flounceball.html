@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
-    <div id="pitch" class="blurred">
+    <div id="pitch">
         <svg version="1.1" viewBox="0.0 0.0 1010.8293963254594 625.7034120734908" fill="none" stroke="none" stroke-linecap="square" stroke-miterlimit="10" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
             <clipPath id="p.0">
                 <path d="m0 0l1010.8294 0l0 625.7034l-1010.8294 0l0 -625.7034z" clip-rule="nonzero"/>
@@ -162,34 +162,29 @@ if __name__ == "__main__":
             // Player positions update
             if (partitionIndex >= 1 && partitionIndex <= 20) {
                 const pitch = document.getElementById('pitch');
-                const svgWidth = pitch.clientWidth;
-                const svgHeight = pitch.clientHeight;
-                const centerX = svgWidth / 2;
-                const centerY = svgHeight / 2;
                 const playerDotId = `playerDot${partitionIndex}`;
                 let playerDot = document.getElementById(playerDotId);
                 if (!playerDot) {
-                    playerDot = document.createElement('div');
-                    playerDot.id = playerDotId;
-                    playerDot.style.position = 'absolute';
-                    playerDot.style.width = '10px';
-                    playerDot.style.height = '10px';
+                    playerDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    playerDot.setAttribute("id", playerDotId);
+                    playerDot.setAttribute("r", "5");
                     if (partitionIndex <= 10) {
-                        playerDot.style.backgroundColor = 'red';
+                        playerDot.setAttribute("fill", "red");
                     } else {
-                        playerDot.style.backgroundColor = 'blue';
+                        playerDot.setAttribute("fill", "blue");
                     }
-                    playerDot.style.borderRadius = '50%';
-                    document.getElementById('pitch').appendChild(playerDot);
+                    pitch.querySelector("svg").appendChild(playerDot);
                 }
                 // Transform from radial and angular here with origin at image centre
-                const magicNumber = 3.0; // radial coord scaling to svg image
-                const r = state[0] * magicNumber;
+                const simPitchRadius = 100.0;
+                const r = state[0] * (271.6693 / simPitchRadius);
                 const theta = state[1];
-                const x = r * Math.cos(theta);
-                const y = r * Math.sin(theta);
-                playerDot.style.left = `${centerX + x - 5}px`;
-                playerDot.style.top = `${centerY - y - 5}px`;
+                const centreX = 506.46195;
+                const centreY = 312.8517;
+                const x = centreX + r * Math.cos(theta);
+                const y = centreY + r * Math.sin(theta);
+                playerDot.setAttribute("cx", x);
+                playerDot.setAttribute("cy", y);
             }
         }
     </script>
