@@ -5,6 +5,7 @@ package main
 import (
 	"github.com/umbralcalc/dexetera/pkg/examples"
 	"github.com/umbralcalc/dexetera/pkg/simio"
+	"github.com/umbralcalc/stochadex/pkg/phenomena"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
@@ -20,9 +21,25 @@ func main() {
 		Seeds:                 []uint64{0, 563, 8312},
 		StateWidths:           []int{3, 5, 3},
 		StateHistoryDepths:    []int{2, 2, 2},
-		TimestepsHistoryDepth: 2,
+		TimestepsHistoryDepth: 150,
 	}
 	partitions := []simulator.Partition{
+		{
+			// action taker
+			Iteration: &simulator.ParamValuesIteration{},
+		},
+		{
+			// left-node queue counts
+			Iteration: &phenomena.HistogramNodeIteration{},
+		},
+		{
+			// upper-node queue counts
+			Iteration: &phenomena.HistogramNodeIteration{},
+		},
+		{
+			// right-node queue counts
+			Iteration: &phenomena.HistogramNodeIteration{},
+		},
 		{
 			// queue-left-node-middle-outside-triangle
 			Iteration: &examples.SpacecraftLineCountIteration{},
@@ -39,14 +56,14 @@ func main() {
 			// left-node
 			Iteration: &examples.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
-				"partition_0_input_count": 0,
-				"partition_1_input_count": 1,
-				"partition_2_input_count": 2,
+				"partition_4_input_count": 4,
+				"partition_5_input_count": 5,
+				"partition_6_input_count": 6,
 			},
 			ParamsFromIndices: map[string][]int{
-				"partition_0_input_count": {1},
-				"partition_1_input_count": {1},
-				"partition_2_input_count": {1},
+				"partition_4_input_count": {1},
+				"partition_5_input_count": {1},
+				"partition_6_input_count": {1},
 			},
 		},
 		{
@@ -61,12 +78,12 @@ func main() {
 			// upper-node
 			Iteration: &examples.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
-				"partition_4_input_count": 4,
-				"partition_5_input_count": 5,
+				"partition_8_input_count": 8,
+				"partition_9_input_count": 9,
 			},
 			ParamsFromIndices: map[string][]int{
-				"partition_4_input_count": {1},
-				"partition_5_input_count": {1},
+				"partition_8_input_count": {1},
+				"partition_9_input_count": {1},
 			},
 		},
 		{
@@ -81,12 +98,12 @@ func main() {
 			// right-node
 			Iteration: &examples.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
-				"partition_7_input_count": 7,
-				"partition_8_input_count": 8,
+				"partition_11_input_count": 11,
+				"partition_12_input_count": 12,
 			},
 			ParamsFromIndices: map[string][]int{
-				"partition_7_input_count": {1},
-				"partition_8_input_count": {1},
+				"partition_11_input_count": {1},
+				"partition_12_input_count": {1},
 			},
 		},
 	}
@@ -98,9 +115,9 @@ func main() {
 		OutputCondition: &simulator.EveryStepOutputCondition{},
 		OutputFunction:  &simulator.NilOutputFunction{},
 		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
-			MaxTimeElapsed: 100,
+			MaxTimeElapsed: 3652.5,
 		},
-		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
+		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 10.0},
 	}
 	simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }

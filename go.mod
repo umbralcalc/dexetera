@@ -12,4 +12,5 @@ require (
 require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	scientificgo.org/special v0.0.0 // indirect
 )
