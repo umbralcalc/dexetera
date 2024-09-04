@@ -205,8 +205,8 @@ func main() {
 		Partitions:      partitionConfig.Partitions,
 		OutputCondition: &simulator.EveryStepOutputCondition{},
 		OutputFunction:  &simulator.StdoutOutputFunction{},
-		TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
-			MaxNumberOfSteps: int(totalMatchSeconds / timeStepsizeSeconds),
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+			MaxTimeElapsed: totalMatchSeconds,
 		},
 		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: timeStepsizeSeconds},
 	}

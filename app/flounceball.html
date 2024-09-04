@@ -36,7 +36,7 @@
                 <p>2. The objective of the game is for your team to score more points than the opposition team, but how they are directly scored is hidden from you.</p>
                 <p>3. All you know is, at different times, players will perform poorly and others will perform really well, depending entirely on their pitch location.</p>
                 <p>4. To influence the game as a manager, you can continuously teleport your players to different positions on the circular field.</p>
-                <p>5. Good luck.</p>
+                <p>5. You have 5 minutes. Good luck.</p>
             </div>
             <div class="panel">
                 <h2>How to play:</h2>
@@ -97,7 +97,7 @@ if __name__ == "__main__":
                 action: 'start', 
                 wasmBinary: 'flounceball/main.wasm',
                 serverPartitionIndices: [0, 22],
-                stopAtSimTime: 300.0,
+                stopAtSimTime: 300.05,
                 debugMode: false
             });
             document.getElementById('pitch').classList.remove('blurred');
