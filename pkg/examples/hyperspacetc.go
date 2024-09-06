@@ -110,7 +110,7 @@ func (s *SpacecraftLineCountIteration) Iterate(
 	// Update the downstream departures from the queue into a line
 	// connector which should be conditional on the line having allowed flow
 	outputState[LineCountStateValueIndices["Downstream Exit Count"]] = 0.0
-	if params["flow_allowed"][0] > 0.0 && stateHistory.Values.At(
+	if int(params["partition_flow_allowed"][0]) == partitionIndex && stateHistory.Values.At(
 		0, LineCountStateValueIndices["Downstream Queue Size"]) > 0.0 {
 		if stateHistory.Values.At(
 			0, LineCountStateValueIndices["Time Since Last Exit"],
