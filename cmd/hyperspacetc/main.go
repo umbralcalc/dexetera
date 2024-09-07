@@ -3,6 +3,8 @@
 package main
 
 import (
+	"math/rand"
+
 	"github.com/umbralcalc/dexetera/pkg/examples"
 	"github.com/umbralcalc/dexetera/pkg/simio"
 	"github.com/umbralcalc/stochadex/pkg/observations"
@@ -10,6 +12,10 @@ import (
 )
 
 func main() {
+	seeds := make([]uint64, 0)
+	for i := 0; i < 15; i++ {
+		seeds = append(seeds, uint64(rand.Intn(10000)))
+	}
 	settings := &simulator.Settings{
 		Params: []simulator.Params{
 			{
@@ -145,7 +151,7 @@ func main() {
 			{0.0, 0.0, 0.0, 0.0},
 		},
 		InitTimeValue:         0.0,
-		Seeds:                 []uint64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+		Seeds:                 seeds,
 		StateWidths:           []int{3, 3, 2, 2, 5, 5, 5, 2, 5, 5, 3, 5, 5, 2, 4},
 		StateHistoryDepths:    []int{1, 1, 1, 1, 150, 150, 150, 1, 150, 150, 1, 150, 150, 1, 1},
 		TimestepsHistoryDepth: 150,

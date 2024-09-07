@@ -6,9 +6,10 @@ class HyperspaceTCActionTaker(ActionTaker):
     def state_map(self) -> dict[int, str]:
         """You can ignore this config property."""
         return {
-            0: "actions",
-            1: "process_1",
-            2: "process_2",
+            0: "latest_controller_actions",
+            1: "latest_left_jump_point_queues",
+            2: "latest_upper_jump_point_queues",
+            3: "latest_right_jump_point_queues",
         }
 
     def take_next_action(
@@ -21,7 +22,7 @@ class HyperspaceTCActionTaker(ActionTaker):
         Also check out the controller cheatsheet if needed:
         umbralcalc.github.io/dexetera/cmd/hyperspacetc/cheatsheet.md
         """
-        return [s + 0.1 for s in states["actions"]]
+        return states["actions"]
 
 
 if __name__ == "__main__":
