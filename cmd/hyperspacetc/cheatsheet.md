@@ -17,7 +17,6 @@
 0. is the size of the outside triangle queue (served with ID 8)
 1. is the size of the inside triangle queue (served with ID 9)
 
-
 ## List value meanings for `states["latest_right_jump_point_queues"]`
 
 0. is the size of the lower inside triangle queue (served with ID 11)

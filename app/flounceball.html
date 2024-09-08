@@ -107,6 +107,7 @@ if __name__ == "__main__":
             const timesteps = data.timesteps;
             const partitionIndex = data.partitionIndex;
             const state = data.state;
+            const pitch = document.getElementById('pitch');
 
             // Time and score display in the top left corner
             if (partitionIndex === 22) {
@@ -161,7 +162,6 @@ if __name__ == "__main__":
 
             // Player positions update
             if (partitionIndex >= 1 && partitionIndex <= 20) {
-                const pitch = document.getElementById('pitch');
                 const playerDotId = `playerDot${partitionIndex}`;
                 let playerDot = document.getElementById(playerDotId);
                 if (!playerDot) {
