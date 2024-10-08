@@ -67,10 +67,10 @@ func (s *SpacecraftLineCountIteration) Iterate(
 	stateHistory := stateHistories[partitionIndex]
 	outputState := stateHistory.Values.RawRowView(0)
 
-	// Update the upstream entries into the line from a line connector if it exists
-	if connectorParts, ok := params["upstream_partition"]; ok {
+	// Update the upstream entries into the line from an upstream if it exists
+	if upPart, ok := params["upstream_partition"]; ok {
 		outputState[LineCountStateValueIndices["Upstream Entry Count"]] =
-			stateHistories[int(connectorParts[0])].Values.At(
+			stateHistories[int(upPart[0])].Values.At(
 				0, int(params["upstream_value_index"][0]),
 			)
 	}
@@ -79,7 +79,7 @@ func (s *SpacecraftLineCountIteration) Iterate(
 	// is allowed in this simple model
 	minEntryTimeIndex := int(stateHistory.Values.At(0,
 		LineCountStateValueIndices["Min Upstream Entry Time Index In Queue"]))
-	for i := minEntryTimeIndex - 1; i >= 1; i-- {
+	for i := minEntryTimeIndex - 1; i == 1; i-- {
 		if stateHistory.Values.At(
 			i, LineCountStateValueIndices["Upstream Entry Count"]) > 0.0 {
 			queueSize := stateHistory.Values.At(

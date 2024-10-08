@@ -6,7 +6,6 @@ import (
 	"math/rand"
 
 	"github.com/umbralcalc/dexetera/pkg/examples"
-	"github.com/umbralcalc/dexetera/pkg/simio"
 	"github.com/umbralcalc/stochadex/pkg/observations"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
@@ -43,9 +42,9 @@ func main() {
 				"upstream_value_index":      {0},
 				"line_length":               {322.509871659},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// queue-left-node-upper-outside-triangle
@@ -53,9 +52,9 @@ func main() {
 				"upstream_value_index":      {1},
 				"line_length":               {354.675108482},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// queue-left-node-lower-outside-triangle
@@ -63,9 +62,9 @@ func main() {
 				"upstream_value_index":      {2},
 				"line_length":               {312.773010188},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// left-node
@@ -77,9 +76,9 @@ func main() {
 				"upstream_value_index":      {3},
 				"line_length":               {469.583908959},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// queue-upper-node-inside-triangle
@@ -87,9 +86,9 @@ func main() {
 				"upstream_value_index":      {0},
 				"line_length":               {253.799143859},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// upper-node
@@ -101,9 +100,9 @@ func main() {
 				"upstream_value_index":      {0},
 				"line_length":               {292.836844271},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// queue-right-node-upper-inside-triangle
@@ -111,9 +110,9 @@ func main() {
 				"upstream_value_index":      {1},
 				"line_length":               {207.953361475},
 				"spacecraft_length":         {2.0},
-				"spacecraft_speed":          {5.0},
-				"spacecraft_speed_variance": {2.0},
-				"time_to_exit":              {20.0},
+				"spacecraft_speed":          {50.0},
+				"spacecraft_speed_variance": {5.0},
+				"time_to_exit":              {10.0},
 			},
 			{
 				// right-node
@@ -123,7 +122,7 @@ func main() {
 				// incoming counts
 				"observed_values":                 {1, 1, 1, 1},
 				"state_value_observation_indices": {0, 1, 2, 3},
-				"state_value_observation_probs":   {0.2, 0.2, 0.2, 0.2},
+				"state_value_observation_probs":   {0.9, 0.9, 0.9, 0.9},
 			},
 		},
 		InitStateValues: [][]float64{
@@ -146,8 +145,8 @@ func main() {
 		InitTimeValue:         0.0,
 		Seeds:                 seeds,
 		StateWidths:           []int{3, 3, 2, 2, 5, 5, 5, 2, 5, 5, 3, 5, 5, 2, 4},
-		StateHistoryDepths:    []int{1, 1, 1, 1, 150, 150, 150, 1, 150, 150, 1, 150, 150, 1, 1},
-		TimestepsHistoryDepth: 150,
+		StateHistoryDepths:    []int{1, 1, 1, 1, 500, 500, 500, 1, 500, 500, 1, 500, 500, 1, 1},
+		TimestepsHistoryDepth: 500,
 	}
 	partitions := []simulator.Partition{
 		{
@@ -285,11 +284,12 @@ func main() {
 	implementations := &simulator.Implementations{
 		Partitions:      partitions,
 		OutputCondition: &simulator.EveryStepOutputCondition{},
-		OutputFunction:  &simulator.NilOutputFunction{},
+		OutputFunction:  &simulator.StdoutOutputFunction{},
 		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
 			MaxTimeElapsed: 3652.5,
 		},
-		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 10.0},
+		TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
 	}
-	simio.RegisterStep(settings, implementations, 0, "", ":2112")
+	simulator.NewPartitionCoordinator(settings, implementations).Run()
+	// simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }
