@@ -18,7 +18,7 @@ The resulting `main.wasm` binary can then be executed in JavaScript code. When e
 
 ```shell
 # view the app running at http://localhost:8000/flounceball.html
-cd app/ && python3 -m http.server 8000
+cd app/ && python -m http.server 8000
 ```
 
 You can then interact with the simulation using any desired websocket server application. To make things straightforward for the python developer, we've made a PyPI package called [dexAct](https://pypi.org/project/dexact/) that simplifies this experience into:
