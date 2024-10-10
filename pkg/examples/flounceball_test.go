@@ -3,6 +3,7 @@ package examples
 import (
 	"testing"
 
+	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
@@ -28,11 +29,14 @@ func TestFlounceball(t *testing.T) {
 					simulator.Partition{Iteration: otherPlayerIteration},
 				)
 			}
-			matchIteration := &FlounceballMatchStateIteration{}
+			minGroupingIteration := &general.ValuesGroupedAggregationIteration{
+				ValuesFunction: PlayerProximityValuesFunction,
+				AggFunction:    general.MinAggFunction,
+			}
 			partitions = append(
 				partitions,
 				simulator.Partition{
-					Iteration: matchIteration,
+					Iteration: minGroupingIteration,
 					ParamsFromUpstreamPartition: map[string]int{
 						"your_player_1_state":   0,
 						"your_player_2_state":   1,
@@ -54,6 +58,18 @@ func TestFlounceball(t *testing.T) {
 						"other_player_8_state":  17,
 						"other_player_9_state":  18,
 						"other_player_10_state": 19,
+					},
+				},
+			)
+			matchIteration := &general.ValuesFunctionIteration{
+				Function: FlounceballMatchStateValuesFunction,
+			}
+			partitions = append(
+				partitions,
+				simulator.Partition{
+					Iteration: matchIteration,
+					ParamsFromUpstreamPartition: map[string]int{
+						"team_proximity_minima": 20,
 					},
 				},
 			)

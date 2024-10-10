@@ -52,7 +52,7 @@ class FlounceballActionTaker(ActionTaker):
         """You can ignore this config property."""
         return {
             0: "latest_manager_actions",
-            22: "latest_match_state",
+            23: "latest_match_state",
         }
 
     def take_next_action(
@@ -96,7 +96,7 @@ if __name__ == "__main__":
             worker.postMessage({ 
                 action: 'start', 
                 wasmBinary: 'flounceball/main.wasm',
-                serverPartitionIndices: [0, 22],
+                serverPartitionIndices: [0, 23],
                 stopAtSimTime: 300.05,
                 debugMode: false
             });
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             const pitch = document.getElementById('pitch');
 
             // Time and score display in the top left corner
-            if (partitionIndex === 22) {
+            if (partitionIndex === 23) {
                 // Time display setup
                 let timeDisplay = document.getElementById('timeDisplay');
                 if (!timeDisplay) {

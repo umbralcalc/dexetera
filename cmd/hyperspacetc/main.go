@@ -6,7 +6,8 @@ import (
 	"math/rand"
 
 	"github.com/umbralcalc/dexetera/pkg/examples"
-	"github.com/umbralcalc/stochadex/pkg/observations"
+	"github.com/umbralcalc/stochadex/pkg/discrete"
+	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
@@ -151,19 +152,19 @@ func main() {
 	partitions := []simulator.Partition{
 		{
 			// action taker
-			Iteration: &simulator.ParamValuesIteration{},
+			Iteration: &general.ParamValuesIteration{},
 		},
 		{
 			// left-node queue counts
-			Iteration: &simulator.CopyValuesIteration{},
+			Iteration: &general.CopyValuesIteration{},
 		},
 		{
 			// upper-node queue counts
-			Iteration: &simulator.CopyValuesIteration{},
+			Iteration: &general.CopyValuesIteration{},
 		},
 		{
 			// right-node queue counts
-			Iteration: &simulator.CopyValuesIteration{},
+			Iteration: &general.CopyValuesIteration{},
 		},
 		{
 			// queue-left-node-middle-outside-triangle
@@ -275,7 +276,7 @@ func main() {
 		},
 		{
 			// incoming counts
-			Iteration: &observations.BinomialStaticPartialStateObservationIteration{},
+			Iteration: &discrete.BinomialObservationProcessIteration{},
 		},
 	}
 	for index, partition := range partitions {

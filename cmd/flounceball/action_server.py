@@ -8,7 +8,7 @@ class FlounceballActionTaker(ActionTaker):
         """You can ignore this config property."""
         return {
             0: "latest_manager_actions",
-            22: "latest_match_state",
+            23: "latest_match_state",
         }
 
     def take_next_action(

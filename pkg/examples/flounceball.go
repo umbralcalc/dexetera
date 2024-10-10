@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
@@ -71,61 +72,14 @@ func proximity(radial1, angular1, radial2, angular2 float64) float64 {
 	return math.Sqrt((diffX * diffX) + (diffY * diffY))
 }
 
-// FlounceballMatchStateIteration describes the iteration of a Flounceball
-// match state in response to player positions and manager decisions.
-type FlounceballMatchStateIteration struct {
-	normDist *distuv.Normal
-}
-
-func (f *FlounceballMatchStateIteration) Configure(
-	partitionIndex int,
-	settings *simulator.Settings,
-) {
-	f.normDist = &distuv.Normal{
-		Mu:    0.0,
-		Sigma: settings.Params[partitionIndex]["match_noise"][0],
-		Src:   rand.NewSource(settings.Seeds[partitionIndex]),
-	}
-}
-
-// isYourWin returns a boolean which answers whether or not your
-// team has the player closest to the chosen coordinate.
-func (f *FlounceballMatchStateIteration) isYourWin(
-	params simulator.Params,
-	chosenRadial float64,
-	chosenAngular float64,
-) bool {
-	stillYourWin := true
-	state := params["your_player_1_state"]
-	bestProx := proximity(state[0], state[1], chosenRadial, chosenAngular)
-	for i := 1; i < 11; i++ {
-		state = params["other_player_"+strconv.Itoa(i)+"_state"]
-		if prox := proximity(
-			state[0], state[1], chosenRadial, chosenAngular); prox < bestProx {
-			bestProx = prox
-			stillYourWin = false
-		}
-	}
-	if stillYourWin {
-		return true
-	}
-	for i := 2; i < 11; i++ {
-		state = params["your_player_"+strconv.Itoa(i)+"_state"]
-		if prox := proximity(
-			state[0], state[1], chosenRadial, chosenAngular); prox < bestProx {
-			return true
-		}
-	}
-	return false
-}
-
-func (f *FlounceballMatchStateIteration) Iterate(
+// PlayerProximityValuesFunction generates player proximity values
+// to the chosen coordinates where the group is the team.
+func PlayerProximityValuesFunction(
 	params simulator.Params,
 	partitionIndex int,
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
-) []float64 {
-	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
+) []general.GroupStateValue {
 	chosenRadial := params["chosen_coordinates"][0]
 	if chosenRadial < 0.0 {
 		chosenRadial = 0.0
@@ -134,7 +88,41 @@ func (f *FlounceballMatchStateIteration) Iterate(
 		chosenRadial = PitchRadiusMetres
 	}
 	chosenAngular := params["chosen_coordinates"][1]
-	if f.isYourWin(params, chosenRadial, chosenAngular) {
+	values := make([]general.GroupStateValue, 0)
+	for i := 1; i < 11; i++ {
+		state := params["your_player_"+strconv.Itoa(i)+"_state"]
+		values = append(
+			values,
+			general.GroupStateValue{
+				Group: 0,
+				State: proximity(
+					state[0], state[1], chosenRadial, chosenAngular),
+			},
+		)
+		state = params["other_player_"+strconv.Itoa(i)+"_state"]
+		values = append(
+			values,
+			general.GroupStateValue{
+				Group: 1,
+				State: proximity(
+					state[0], state[1], chosenRadial, chosenAngular),
+			},
+		)
+	}
+	return values
+}
+
+// FlounceballMatchStateValuesFunction describes the iteration of a
+// Flounceball match state in response to player positions.
+func FlounceballMatchStateValuesFunction(
+	params simulator.Params,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
+	isYourWin := params["team_proximity_minima"][0] < params["team_proximity_minima"][1]
+	if isYourWin {
 		outputState[MatchStateValueIndices["Your Team Total Points"]] += 1
 	} else {
 		outputState[MatchStateValueIndices["Other Team Total Points"]] += 1

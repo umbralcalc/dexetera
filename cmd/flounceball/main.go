@@ -11,11 +11,13 @@ import (
 
 	"github.com/umbralcalc/dexetera/pkg/examples"
 	"github.com/umbralcalc/dexetera/pkg/simio"
+	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
 type MatchPartitionConfig struct {
 	Partitions                            []simulator.Partition
+	TeamMinParamsFromUpstreamPartition    map[string]int
 	MatchStateParamsFromUpstreamPartition map[string]int
 }
 
@@ -65,7 +67,7 @@ func addActionTaker(
 	)
 	partitionConfig.Partitions = append(
 		partitionConfig.Partitions,
-		simulator.Partition{Iteration: &simulator.ParamValuesIteration{}},
+		simulator.Partition{Iteration: &general.ParamValuesIteration{}},
 	)
 }
 
@@ -104,7 +106,7 @@ func addYourPlayers(
 				},
 			},
 		)
-		partitionConfig.MatchStateParamsFromUpstreamPartition["your_player_"+
+		partitionConfig.TeamMinParamsFromUpstreamPartition["your_player_"+
 			strconv.Itoa(i)+"_state"] = index
 		index += 1
 	}
@@ -137,7 +139,7 @@ func addOtherPlayers(
 			partitionConfig.Partitions,
 			simulator.Partition{Iteration: otherPlayerIteration},
 		)
-		partitionConfig.MatchStateParamsFromUpstreamPartition["other_player_"+
+		partitionConfig.TeamMinParamsFromUpstreamPartition["other_player_"+
 			strconv.Itoa(i)+"_state"] = index
 		index += 1
 	}
@@ -161,9 +163,39 @@ func addChosenCoordsGenerator(
 	)
 	partitionConfig.Partitions = append(
 		partitionConfig.Partitions,
-		simulator.Partition{Iteration: &simulator.ParamValuesIteration{}},
+		simulator.Partition{Iteration: &general.ParamValuesIteration{}},
 	)
-	partitionConfig.MatchStateParamsFromUpstreamPartition["chosen_coordinates"] = index
+	partitionConfig.TeamMinParamsFromUpstreamPartition["chosen_coordinates"] = index
+}
+
+func addTeamMinCalculator(
+	settings *simulator.Settings,
+	partitionConfig *MatchPartitionConfig,
+) {
+	index := len(partitionConfig.Partitions)
+	settings.Seeds = append(settings.Seeds, 0)
+	settings.StateWidths = append(settings.StateWidths, 2)
+	settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
+	settings.InitStateValues = append(settings.InitStateValues, []float64{1000.0, 1000.0})
+	settings.Params = append(
+		settings.Params,
+		simulator.Params{
+			"accepted_value_groups": {0, 1},
+			"default_values":        {1000.0, 1000.0},
+		},
+	)
+	minGroupingIteration := &general.ValuesGroupedAggregationIteration{
+		ValuesFunction: examples.PlayerProximityValuesFunction,
+		AggFunction:    general.MinAggFunction,
+	}
+	partitionConfig.Partitions = append(
+		partitionConfig.Partitions,
+		simulator.Partition{
+			Iteration:                   minGroupingIteration,
+			ParamsFromUpstreamPartition: partitionConfig.TeamMinParamsFromUpstreamPartition,
+		},
+	)
+	partitionConfig.MatchStateParamsFromUpstreamPartition["team_proximity_minima"] = index
 }
 
 func addMatchState(
@@ -174,8 +206,10 @@ func addMatchState(
 	settings.StateWidths = append(settings.StateWidths, 2)
 	settings.StateHistoryDepths = append(settings.StateHistoryDepths, 1)
 	settings.InitStateValues = append(settings.InitStateValues, []float64{0.0, 0.0})
-	settings.Params = append(settings.Params, simulator.Params{"match_noise": {1.0}})
-	matchIteration := &examples.FlounceballMatchStateIteration{}
+	settings.Params = append(settings.Params, simulator.Params{})
+	matchIteration := &general.ValuesFunctionIteration{
+		Function: examples.FlounceballMatchStateValuesFunction,
+	}
 	partitionConfig.Partitions = append(
 		partitionConfig.Partitions,
 		simulator.Partition{
@@ -192,11 +226,13 @@ func main() {
 	partitionConfig := &MatchPartitionConfig{
 		Partitions:                            make([]simulator.Partition, 0),
 		MatchStateParamsFromUpstreamPartition: make(map[string]int, 0),
+		TeamMinParamsFromUpstreamPartition:    make(map[string]int, 0),
 	}
 	addActionTaker(settings, partitionConfig)
 	addYourPlayers(settings, partitionConfig)
 	addOtherPlayers(settings, partitionConfig)
 	addChosenCoordsGenerator(settings, partitionConfig)
+	addTeamMinCalculator(settings, partitionConfig)
 	addMatchState(settings, partitionConfig)
 	for i, partition := range partitionConfig.Partitions {
 		partition.Iteration.Configure(i, settings)
