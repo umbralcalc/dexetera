@@ -17,7 +17,7 @@ params:
   spacecraft_speed_variance: [3.5]
   partition_flow_allowed: [0]
   time_to_exit: [0.0]
-- connected_incoming_partitions: [0, 1, 2]
+- connected_incoming_partitions: [0, 2, 4]
 - line_length: [18.0]
   spacecraft_length: [1.0]
   spacecraft_speed: [3.5]

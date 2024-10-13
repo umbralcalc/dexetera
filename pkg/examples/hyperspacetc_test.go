@@ -99,13 +99,13 @@ func TestHyperspacetc(t *testing.T) {
 					Iteration: &SpacecraftLineConnectorIteration{},
 					ParamsFromUpstreamPartition: map[string]int{
 						"partition_0_input_value": 0,
-						"partition_1_input_value": 1,
 						"partition_2_input_value": 2,
+						"partition_4_input_value": 4,
 					},
 					ParamsFromIndices: map[string][]int{
-						"partition_0_input_value": {1},
-						"partition_1_input_value": {1},
-						"partition_2_input_value": {1},
+						"partition_0_input_value": {0},
+						"partition_2_input_value": {0},
+						"partition_4_input_value": {0},
 					},
 				},
 				{
