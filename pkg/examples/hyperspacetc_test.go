@@ -3,6 +3,8 @@ package examples
 import (
 	"testing"
 
+	"github.com/umbralcalc/stochadex/pkg/continuous"
+	"github.com/umbralcalc/stochadex/pkg/discrete"
 	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
@@ -14,24 +16,9 @@ func TestHyperspacetc(t *testing.T) {
 			settings := simulator.LoadSettingsFromYaml(
 				"hyperspacetc_settings.yaml",
 			)
-			iterationByEvent := map[float64]simulator.Iteration{
-				0: &general.ConstantValuesIteration{},
-				1: &general.ValuesCollectionPushIteration{
-					PushFunction: general.ParamValuesPushFunction,
-				},
-				2: &general.ValuesCollectionPopIteration{
-					PopIndexFunction: general.NextNonEmptyPopIndexFunction,
-				},
-				3: &general.SerialIterationsIteration{
-					Iterations: []simulator.Iteration{
-						&general.ValuesCollectionPushIteration{
-							PushFunction: general.ParamValuesPushFunction,
-						},
-						&general.ValuesCollectionPopIteration{
-							PopIndexFunction: general.NextNonEmptyPopIndexFunction,
-						},
-					},
-				},
+			sourceIterationByEvent := map[float64]simulator.Iteration{
+				0: &general.ParamValuesIteration{},
+				1: &continuous.CumulativeTimeIteration{},
 			}
 			downstreamIterationByEvent := map[float64]simulator.Iteration{
 				0: &general.ConstantValuesIteration{},
@@ -54,9 +41,27 @@ func TestHyperspacetc(t *testing.T) {
 			}
 			partitions := []simulator.Partition{
 				{
+					Iteration: &general.ValuesGroupedAggregationIteration{
+						ValuesFunction: SpacecraftQueueValuesFunction,
+						AggFunction:    general.CountAggFunction,
+					},
+				},
+				{
+					Iteration: &general.ValuesChangingEventsIteration{
+						EventIteration:   &discrete.BernoulliProcessIteration{},
+						IterationByEvent: sourceIterationByEvent,
+					},
+				},
+				{
 					Iteration: &general.ValuesChangingEventsIteration{
 						EventIteration:   &SpacecraftLineEventIteration{},
-						IterationByEvent: iterationByEvent,
+						IterationByEvent: downstreamIterationByEvent,
+					},
+					ParamsFromUpstreamPartition: map[string]int{
+						"queue_size": 0,
+					},
+					ParamsFromIndices: map[string][]int{
+						"queue_size": {0},
 					},
 				},
 				{
@@ -69,8 +74,20 @@ func TestHyperspacetc(t *testing.T) {
 				},
 				{
 					Iteration: &general.ValuesChangingEventsIteration{
+						EventIteration:   &discrete.BernoulliProcessIteration{},
+						IterationByEvent: sourceIterationByEvent,
+					},
+				},
+				{
+					Iteration: &general.ValuesChangingEventsIteration{
 						EventIteration:   &SpacecraftLineEventIteration{},
-						IterationByEvent: iterationByEvent,
+						IterationByEvent: downstreamIterationByEvent,
+					},
+					ParamsFromUpstreamPartition: map[string]int{
+						"queue_size": 0,
+					},
+					ParamsFromIndices: map[string][]int{
+						"queue_size": {1},
 					},
 				},
 				{
@@ -83,8 +100,20 @@ func TestHyperspacetc(t *testing.T) {
 				},
 				{
 					Iteration: &general.ValuesChangingEventsIteration{
+						EventIteration:   &discrete.BernoulliProcessIteration{},
+						IterationByEvent: sourceIterationByEvent,
+					},
+				},
+				{
+					Iteration: &general.ValuesChangingEventsIteration{
 						EventIteration:   &SpacecraftLineEventIteration{},
-						IterationByEvent: iterationByEvent,
+						IterationByEvent: downstreamIterationByEvent,
+					},
+					ParamsFromUpstreamPartition: map[string]int{
+						"queue_size": 0,
+					},
+					ParamsFromIndices: map[string][]int{
+						"queue_size": {2},
 					},
 				},
 				{
@@ -98,14 +127,14 @@ func TestHyperspacetc(t *testing.T) {
 				{
 					Iteration: &SpacecraftLineConnectorIteration{},
 					ParamsFromUpstreamPartition: map[string]int{
-						"partition_0_input_value": 0,
-						"partition_2_input_value": 2,
-						"partition_4_input_value": 4,
+						"partition_3_input_value": 3,
+						"partition_6_input_value": 6,
+						"partition_9_input_value": 9,
 					},
 					ParamsFromIndices: map[string][]int{
-						"partition_0_input_value": {0},
-						"partition_2_input_value": {0},
-						"partition_4_input_value": {0},
+						"partition_3_input_value": {0},
+						"partition_6_input_value": {0},
+						"partition_9_input_value": {0},
 					},
 				},
 				{
@@ -116,23 +145,7 @@ func TestHyperspacetc(t *testing.T) {
 				},
 				{
 					Iteration: &general.ValuesChangingEventsIteration{
-						EventIteration: &general.ValuesFunctionIteration{
-							Function: SpacecraftQueueEventFunction,
-						},
-						IterationByEvent: downstreamIterationByEvent,
-					},
-				},
-				{
-					Iteration: &general.ValuesChangingEventsIteration{
 						EventIteration:   &SpacecraftLineEventIteration{},
-						IterationByEvent: downstreamIterationByEvent,
-					},
-				},
-				{
-					Iteration: &general.ValuesChangingEventsIteration{
-						EventIteration: &general.ValuesFunctionIteration{
-							Function: SpacecraftQueueEventFunction,
-						},
 						IterationByEvent: downstreamIterationByEvent,
 					},
 				},
@@ -145,7 +158,7 @@ func TestHyperspacetc(t *testing.T) {
 				OutputCondition: &simulator.EveryStepOutputCondition{},
 				OutputFunction:  &simulator.NilOutputFunction{},
 				TerminationCondition: &simulator.NumberOfStepsTerminationCondition{
-					MaxNumberOfSteps: 100,
+					MaxNumberOfSteps: 5,
 				},
 				TimestepFunction: &simulator.ConstantTimestepFunction{Stepsize: 1.0},
 			}

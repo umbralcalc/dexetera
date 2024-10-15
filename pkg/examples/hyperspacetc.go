@@ -4,42 +4,25 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
-// LineCountSateValueIndices is a mapping which helps with describing
-// the meaning of the values for each spacecraft line count state index.
-var LineCountStateValueIndices = map[string]int{
-	"Upstream Entry Count":                   0,
-	"Downstream Exit Count":                  1,
-	"Downstream Queue Size":                  2,
-	"Min Upstream Entry Time Index In Queue": 3,
-	"Time Since Last Exit":                   4,
-}
-
-// LabelToEventIndex maps the event label to the relevant index.
-var LabelToEventIndex = map[string]int{
-	"Nothing":    0,
-	"Entry":      1,
-	"Exit":       2,
-	"Entry&Exit": 3,
-}
-
 // EntryExitToEventIndex is a convenience function to map from entry
 // and exit event booleans to the appropriate event index.
-func EntryExitToEventIndex(entry, exit bool) int {
+func EntryExitToEventIndex(entry, exit bool) float64 {
 	type boolPair struct{ entry, exit bool }
 	switch (boolPair{entry: entry, exit: exit}) {
 	case boolPair{entry: false, exit: false}:
-		return LabelToEventIndex["Nothing"]
+		return 0 // Do nothing
 	case boolPair{entry: true, exit: false}:
-		return LabelToEventIndex["Entry"]
+		return 1 // Entry
 	case boolPair{entry: false, exit: true}:
-		return LabelToEventIndex["Exit"]
+		return 2 // Exit
 	case boolPair{entry: true, exit: true}:
-		return LabelToEventIndex["Entry&Exit"]
+		return 3 // Entry and Exit
 	}
 	panic("Couldn't find event")
 }
@@ -54,8 +37,8 @@ func EntryBoolFromUpstreamPartition(
 	// Get the upstream entries from an upstream if it exists
 	if upPart, ok := params["upstream_partition"]; ok {
 		entry = stateHistories[int(upPart[0])].Values.At(
-			0, int(params["upstream_value_index"][0]),
-		) != params["empty_upstream_value"][0]
+			0, int(params["upstream_state_value_index"][0]),
+		) != params["empty_value"][0]
 	}
 	return entry
 }
@@ -81,7 +64,7 @@ func SpacecraftQueueEventFunction(
 			}
 		}
 	}
-	return []float64{float64(EntryExitToEventIndex(entry, exit))}
+	return []float64{EntryExitToEventIndex(entry, exit)}
 }
 
 // EntryTimeFromUpstreamPushFunction retrieves the next values to
@@ -92,7 +75,7 @@ func EntryTimeFromUpstreamPushFunction(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) ([]float64, bool) {
-	if params["push_empty"][0] == stateHistories[int(
+	if params["empty_value"][0] == stateHistories[int(
 		params["upstream_partition"][0])].Values.At(
 		0, int(params["upstream_state_value_index"][0])) {
 		return nil, false
@@ -156,6 +139,7 @@ func (s *SpacecraftLineEventIteration) Iterate(
 	emptyValue := params["empty_value"][0]
 	stateHistory := stateHistories[partitionIndex]
 	for i := 1; i < stateHistory.StateWidth; i++ {
+		// The actual values are the entry times
 		timeSinceEntry := stateHistory.Values.At(0, i)
 		if timeSinceEntry != emptyValue {
 			effectiveLineLength := params["line_length"][0] -
@@ -171,7 +155,7 @@ func (s *SpacecraftLineEventIteration) Iterate(
 			}
 		}
 	}
-	return []float64{float64(EntryExitToEventIndex(entry, downstreamArrival))}
+	return []float64{EntryExitToEventIndex(entry, downstreamArrival)}
 }
 
 // SpacecraftLineConnectorIteration iterates the state of a connection between
@@ -202,14 +186,39 @@ func (s *SpacecraftLineConnectorIteration) Iterate(
 ) []float64 {
 	stateHistory := stateHistories[partitionIndex]
 	outputState := make([]float64, stateHistory.StateWidth)
+	emptyValue := params["empty_value"][0]
 	for i := 0; i < stateHistory.StateWidth; i++ {
-		outputState[i] = 0.0
+		outputState[i] = emptyValue
 	}
 	for _, index := range params["connected_incoming_partitions"] {
 		value := params["partition_"+strconv.Itoa(int(index))+"_input_value"][0]
-		if value > 0.0 {
+		if value != emptyValue {
 			outputState[int(s.categoricalDist.Rand())] = value
 		}
 	}
 	return outputState
+}
+
+// SpacecraftQueueValuesFunction retrieves the ranges of values from each
+// spacecraft queue partition in order to aggregate them into counts.
+func SpacecraftQueueValuesFunction(
+	params simulator.Params,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []general.GroupStateValue {
+	values := make([]general.GroupStateValue, 0)
+	for j, queuePartitionIndex := range params["queue_partition_indices"] {
+		queueStateHistory := stateHistories[int(queuePartitionIndex)]
+		for i := 1; i < queueStateHistory.StateWidth; i++ {
+			values = append(
+				values,
+				general.GroupStateValue{
+					Group: float64(j),
+					State: queueStateHistory.Values.At(0, i),
+				},
+			)
+		}
+	}
+	return values
 }
