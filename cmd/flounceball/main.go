@@ -9,7 +9,7 @@ import (
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 
-	"github.com/umbralcalc/dexetera/pkg/examples"
+	"github.com/umbralcalc/dexetera/pkg/games"
 	"github.com/umbralcalc/dexetera/pkg/simio"
 	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
@@ -49,7 +49,7 @@ func addActionTaker(
 	for i := 1; i < 11; i++ {
 		initialActionValues = append(
 			initialActionValues,
-			examples.PitchRadiusMetres*uniformDist.Rand(),
+			games.PitchRadiusMetres*uniformDist.Rand(),
 		)
 		initialActionValues = append(
 			initialActionValues,
@@ -88,12 +88,12 @@ func addYourPlayers(
 		settings.InitStateValues = append(
 			settings.InitStateValues,
 			[]float64{
-				examples.PitchRadiusMetres * uniformDist.Rand(),
+				games.PitchRadiusMetres * uniformDist.Rand(),
 				2.0 * math.Pi * uniformDist.Rand(),
 			},
 		)
 		settings.Params = append(settings.Params, simulator.Params{})
-		yourPlayerIteration := &examples.FlounceballPlayerStateIteration{}
+		yourPlayerIteration := &games.FlounceballPlayerStateIteration{}
 		partitionConfig.Partitions = append(
 			partitionConfig.Partitions,
 			simulator.Partition{
@@ -129,12 +129,12 @@ func addOtherPlayers(
 		settings.InitStateValues = append(
 			settings.InitStateValues,
 			[]float64{
-				examples.PitchRadiusMetres * uniformDist.Rand(),
+				games.PitchRadiusMetres * uniformDist.Rand(),
 				2.0 * math.Pi * uniformDist.Rand(),
 			},
 		)
 		settings.Params = append(settings.Params, simulator.Params{})
-		otherPlayerIteration := &examples.FlounceballPlayerStateIteration{}
+		otherPlayerIteration := &games.FlounceballPlayerStateIteration{}
 		partitionConfig.Partitions = append(
 			partitionConfig.Partitions,
 			simulator.Partition{Iteration: otherPlayerIteration},
@@ -185,7 +185,7 @@ func addTeamMinCalculator(
 		},
 	)
 	minGroupingIteration := &general.ValuesGroupedAggregationIteration{
-		ValuesFunction: examples.PlayerProximityValuesFunction,
+		ValuesFunction: games.PlayerProximityValuesFunction,
 		AggFunction:    general.MinAggFunction,
 	}
 	partitionConfig.Partitions = append(
@@ -208,7 +208,7 @@ func addMatchState(
 	settings.InitStateValues = append(settings.InitStateValues, []float64{0.0, 0.0})
 	settings.Params = append(settings.Params, simulator.Params{})
 	matchIteration := &general.ValuesFunctionIteration{
-		Function: examples.FlounceballMatchStateValuesFunction,
+		Function: games.FlounceballMatchStateValuesFunction,
 	}
 	partitionConfig.Partitions = append(
 		partitionConfig.Partitions,

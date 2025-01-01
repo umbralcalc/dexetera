@@ -5,7 +5,7 @@ package main
 import (
 	"math/rand"
 
-	"github.com/umbralcalc/dexetera/pkg/examples"
+	"github.com/umbralcalc/dexetera/pkg/games"
 	"github.com/umbralcalc/stochadex/pkg/discrete"
 	"github.com/umbralcalc/stochadex/pkg/general"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
@@ -168,7 +168,7 @@ func main() {
 		},
 		{
 			// queue-left-node-middle-outside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -178,7 +178,7 @@ func main() {
 		},
 		{
 			// queue-left-node-upper-outside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -188,7 +188,7 @@ func main() {
 		},
 		{
 			// queue-left-node-lower-outside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -198,7 +198,7 @@ func main() {
 		},
 		{
 			// left-node
-			Iteration: &examples.SpacecraftLineConnectorIteration{},
+			Iteration: &games.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_4_input_count": 4,
 				"partition_5_input_count": 5,
@@ -212,7 +212,7 @@ func main() {
 		},
 		{
 			// queue-upper-node-outside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -222,7 +222,7 @@ func main() {
 		},
 		{
 			// queue-upper-node-inside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -232,7 +232,7 @@ func main() {
 		},
 		{
 			// upper-node
-			Iteration: &examples.SpacecraftLineConnectorIteration{},
+			Iteration: &games.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_8_input_count": 8,
 				"partition_9_input_count": 9,
@@ -244,7 +244,7 @@ func main() {
 		},
 		{
 			// queue-right-node-lower-inside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -254,7 +254,7 @@ func main() {
 		},
 		{
 			// queue-right-node-upper-inside-triangle
-			Iteration: &examples.SpacecraftLineCountIteration{},
+			Iteration: &games.SpacecraftLineCountIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_flow_allowed": 0,
 			},
@@ -264,7 +264,7 @@ func main() {
 		},
 		{
 			// right-node
-			Iteration: &examples.SpacecraftLineConnectorIteration{},
+			Iteration: &games.SpacecraftLineConnectorIteration{},
 			ParamsFromUpstreamPartition: map[string]int{
 				"partition_11_input_count": 11,
 				"partition_12_input_count": 12,
