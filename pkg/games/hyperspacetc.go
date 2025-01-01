@@ -159,7 +159,7 @@ func (s *SpacecraftLineEventIteration) Iterate(
 }
 
 // SpacecraftLineConnectorIteration iterates the state of a connection between
-// hyperspace lines in the Hyperspace Traffic Control example.
+// hyperspace lines in the Hyperspace Traffic Control game.
 type SpacecraftLineConnectorIteration struct {
 	categoricalDist distuv.Categorical
 }
