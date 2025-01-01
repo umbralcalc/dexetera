@@ -1,6 +1,6 @@
 # dexetera...
 
-'Socket games' for the python programmer built using the [stochadex](https://github.com/umbralcalc/stochadex) simulation framework. Each of these games is a purely-frontend web application built by compiling an interactive stochadex simulation into WebAssembly. The games are then 'stepped' in time through updates sent via a websocket server on the user's machine and visualisations for them are all written in JavaScript (see, e.g., `app/flounceball.html`).
+A collection of 'socket games' for the python programmer built using the [stochadex](https://github.com/umbralcalc/stochadex) simulation framework. Each of these games is a purely-frontend web application built by compiling an interactive stochadex simulation into WebAssembly. The games are then 'stepped' in time through updates sent via a websocket server on the user's machine and visualisations for them are all written in JavaScript (see, e.g., `app/flounceball.html`).
 
 For more context, here is the associated technical article about this project: [https://umbralcalc.github.io/posts/dexetera.html](https://umbralcalc.github.io/posts/dexetera.html).
 
