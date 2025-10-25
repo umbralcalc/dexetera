@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Framework Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #444;
+        }
+        
+        .demo-section h2 {
+            color: #00ff88;
+            margin-top: 0;
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .game-card {
+            background: #333;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #555;
+        }
+        
+        .game-card h3 {
+            color: #00ff88;
+            margin-top: 0;
+        }
+        
+        .game-card p {
+            color: #ccc;
+            font-size: 14px;
+        }
+        
+        .game-card button {
+            background-color: #00ff88;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .game-card button:hover {
+            background-color: #00cc6a;
+        }
+        
+        .code-example {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .code-example pre {
+            margin: 0;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .highlight {
+            background-color: #333;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Game Framework Demo</h1>
+        
+        <div class="demo-section">
+            <h2>🚀 New Game Framework</h2>
+            <p>This demonstrates the new maintainable and extensible game framework for stochadex simulations.</p>
+            
+            <h3>Key Features:</h3>
+            <ul>
+                <li><span class="highlight">Game Interface</span> - Clean contract for all games</li>
+                <li><span class="highlight">Partition Names</span> - Meaningful names instead of hardcoded indices</li>
+                <li><span class="highlight">Go-driven Visualizations</span> - Specify rendering in Go code</li>
+                <li><span class="highlight">Easy Extension</span> - Add new games with minimal boilerplate</li>
+            </ul>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎯 Example Games</h2>
+            <p>Here are some example games built with the new framework:</p>
+            
+            <div class="game-grid">
+                <div class="game-card">
+                    <h3>Simple Counter</h3>
+                    <p>A basic counter that increments over time. Demonstrates the simplest possible game implementation.</p>
+                    <button onclick="openGame('simple_demo')">Play Game</button>
+                </div>
+                
+                <div class="game-card">
+                    <h3>Particle System</h3>
+                    <p>Fifty particles moving randomly on a canvas. Shows more complex state management and visualization.</p>
+                    <button onclick="openGame('particle_system')">Play Game</button>
+                </div>
+                
+                <div class="game-card">
+                    <h3>Flounceball (Updated)</h3>
+                    <p>The classic flounceball game, now using partition names instead of indices.</p>
+                    <button onclick="openGame('flounceball')">Play Game</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>💻 How It Works</h2>
+            <p>The new framework makes it easy to create games. Here's how a simple game is implemented:</p>
+            
+            <div class="code-example">
+                <pre>// 1. Implement the Game interface
+type MyGame struct {
+    config *GameConfig
+}
+
+func (g *MyGame) GetName() string {
+    return "my_game"
+}
+
+func (g *MyGame) GetSettings() *simulator.Settings {
+    return &simulator.Settings{
+        Iterations: []simulator.IterationSettings{
+            {
+                Name: "game_state",
+                Params: simulator.NewParams(map[string][]float64{
+                    "speed": {2.0},
+                }),
+                InitStateValues: []float64{0.0},
+                Seed: 42,
+                StateWidth: 1,
+                StateHistoryDepth: 1,
+            },
+        },
+        InitTimeValue: 0.0,
+        TimestepsHistoryDepth: 1,
+    }
+}
+
+func (g *MyGame) GetImplementations() *simulator.Implementations {
+    return &simulator.Implementations{
+        Iterations: []simulator.Iteration{
+            &MyGameIteration{},
+        },
+        OutputCondition: &simulator.EveryStepOutputCondition{},
+        OutputFunction: &simulator.StdoutOutputFunction{},
+        TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+            MaxTimeElapsed: 60.0,
+        },
+        TimestepFunction: &simulator.ConstantTimestepFunction{
+            Stepsize: 1.0,
+        },
+    }
+}</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎨 Go-driven Visualizations</h2>
+            <p>The framework allows Go code to specify how games should be rendered:</p>
+            
+            <div class="code-example">
+                <pre>func (r *MyGameRenderer) GetVisualizationConfig() *VisualizationConfig {
+    return &VisualizationConfig{
+        CanvasWidth: 800,
+        CanvasHeight: 600,
+        BackgroundColor: "#1a1a1a",
+        Renderers: []RendererConfig{
+            {
+                Type: "circle",
+                PartitionName: "game_state",
+                Properties: map[string]interface{}{
+                    "radius": 10.0,
+                    "color": "#00ff88",
+                },
+            },
+        },
+    }
+}</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🔄 Partition Names</h2>
+            <p>The new framework uses meaningful partition names instead of hardcoded indices:</p>
+            
+            <div class="code-example">
+                <pre>// OLD: Hardcoded indices
+serverPartitionIndices: [0, 23]
+
+// NEW: Meaningful names
+serverPartitionNames: ['action_taker', 'match_state']</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>✨ Benefits</h2>
+            <ul>
+                <li><strong>Maintainable:</strong> Clear separation of concerns</li>
+                <li><strong>Extensible:</strong> Easy to add new games</li>
+                <li><strong>Type-safe:</strong> Go code specifies visualization details</li>
+                <li><strong>Readable:</strong> Meaningful partition names</li>
+                <li><strong>Testable:</strong> Clean interfaces for testing</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function openGame(gameName) {
+            // This would open the actual game
+            alert(`Opening ${gameName} game...`);
+            // In a real implementation, this would navigate to the game page
+            // window.location.href = `${gameName}.html`;
+        }
+    </script>
+</body>
+</html>
