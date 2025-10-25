@@ -2,11 +2,10 @@ package games
 
 import (
 	"math"
-	"strconv"
 
-	"github.com/umbralcalc/stochadex/pkg/general"
+	"math/rand/v2"
+
 	"github.com/umbralcalc/stochadex/pkg/simulator"
-	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
 
@@ -40,7 +39,10 @@ func (f *FlounceballPlayerStateIteration) Configure(
 	f.uniformDist = &distuv.Uniform{
 		Min: 0.0,
 		Max: 1.0,
-		Src: rand.NewSource(settings.Seeds[partitionIndex]),
+		Src: rand.NewPCG(
+			settings.Iterations[partitionIndex].Seed,
+			settings.Iterations[partitionIndex].Seed,
+		),
 	}
 }
 
@@ -51,7 +53,7 @@ func (f *FlounceballPlayerStateIteration) Iterate(
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
 	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
-	if p, ok := params["manager_directed_coordinates"]; ok {
+	if p, ok := params.GetOk("manager_directed_coordinates"); ok {
 		outputState[PlayerStateValueIndices["Radial Position State"]] = p[0]
 		outputState[PlayerStateValueIndices["Angular Position State"]] = p[1]
 	} else {
@@ -70,46 +72,6 @@ func proximity(radial1, angular1, radial2, angular2 float64) float64 {
 	diffX := (radial1 * math.Cos(angular1)) - (radial2 * math.Cos(angular2))
 	diffY := (radial1 * math.Sin(angular1)) - (radial2 * math.Sin(angular2))
 	return math.Sqrt((diffX * diffX) + (diffY * diffY))
-}
-
-// PlayerProximityValuesFunction generates player proximity values
-// to the chosen coordinates where the group is the team.
-func PlayerProximityValuesFunction(
-	params simulator.Params,
-	partitionIndex int,
-	stateHistories []*simulator.StateHistory,
-	timestepsHistory *simulator.CumulativeTimestepsHistory,
-) []general.GroupStateValue {
-	chosenRadial := params["chosen_coordinates"][0]
-	if chosenRadial < 0.0 {
-		chosenRadial = 0.0
-	}
-	if chosenRadial > PitchRadiusMetres {
-		chosenRadial = PitchRadiusMetres
-	}
-	chosenAngular := params["chosen_coordinates"][1]
-	values := make([]general.GroupStateValue, 0)
-	for i := 1; i < 11; i++ {
-		state := params["your_player_"+strconv.Itoa(i)+"_state"]
-		values = append(
-			values,
-			general.GroupStateValue{
-				Group: 0,
-				State: proximity(
-					state[0], state[1], chosenRadial, chosenAngular),
-			},
-		)
-		state = params["other_player_"+strconv.Itoa(i)+"_state"]
-		values = append(
-			values,
-			general.GroupStateValue{
-				Group: 1,
-				State: proximity(
-					state[0], state[1], chosenRadial, chosenAngular),
-			},
-		)
-	}
-	return values
 }
 
 // FlounceballMatchStateValuesFunction describes the iteration of a

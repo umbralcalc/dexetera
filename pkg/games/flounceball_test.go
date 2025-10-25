@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/umbralcalc/stochadex/pkg/general"
+	"github.com/umbralcalc/stochadex/pkg/kernels"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
@@ -30,8 +31,8 @@ func TestFlounceball(t *testing.T) {
 				)
 			}
 			minGroupingIteration := &general.ValuesGroupedAggregationIteration{
-				ValuesFunction: PlayerProximityValuesFunction,
-				AggFunction:    general.MinAggFunction,
+				Aggregation: general.MinAggregation,
+				Kernel:      &kernels.InstantaneousIntegrationKernel{},
 			}
 			partitions = append(
 				partitions,

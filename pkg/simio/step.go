@@ -17,14 +17,14 @@ type JsCallbackOutputFunction struct {
 }
 
 func (j *JsCallbackOutputFunction) Output(
-	partitionIndex int,
+	partitionName string,
 	state []float64,
 	cumulativeTimesteps float64,
 ) {
 	sendBytes, err := proto.Marshal(
 		&PartitionState{
 			CumulativeTimesteps: cumulativeTimesteps,
-			PartitionIndex:      int64(partitionIndex),
+			PartitionName:       partitionName,
 			State:               &State{Values: state},
 		},
 	)
@@ -59,7 +59,7 @@ func GenerateStepClosure(
 				panic(err)
 			}
 			coordinator.Iterators[websocketPartitionIndex].
-				Params["param_values"] = actionState.Values
+				Params.Set("param_values", actionState.Values)
 		}
 		coordinator.Step(wg)
 		return nil
