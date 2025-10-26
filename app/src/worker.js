@@ -10,6 +10,9 @@ let reconnectInterval = 2000; // 2 seconds
 let isConnected = false;
 let debugMode = false;
 let serverPartitionNames = [];
+let timesteps = 0;
+let partitionName = '';
+let state = [];
 
 self.onmessage = async function(event) {
     if (event.data.action === 'start') {
@@ -38,13 +41,46 @@ async function loadWasm(wasmBinary) {
     }
 }
 
+// Global callback function for handling partition state from Go
+function handlePartitionState(data) {
+    // data is raw protobuf bytes from Go, need to deserialize it
+    const message = proto.PartitionState.deserializeBinary(data);
+    
+    if (stopAtSimTime <= message.getCumulativeTimesteps()) return;
+    timesteps = message.getCumulativeTimesteps();
+    partitionName = message.getPartitionName();
+    state = message.getStateList();
+    if (debugMode) {
+        console.log("-------------------------------------------------------");
+        console.log("Cumulative Timesteps:", timesteps);
+        console.log("Partition Name:", partitionName);
+        console.log("State:", state);
+    }
+    // Send the data to the main display thread
+    self.postMessage({
+        type: 'partitionState',
+        data: {
+            timesteps: timesteps,
+            partitionName: partitionName,
+            state: state,
+        }
+    });
+    // Send the subset of the data to the server
+    if (serverPartitionNames.includes(partitionName)) {
+        socket.send(data);
+    }
+}
+
 function startWebSocketClient() {
-    const socket = new WebSocket('ws://localhost:2112');
+    socket = new WebSocket('ws://localhost:2112');
     socket.binaryType = 'arraybuffer';
     socket.onopen = function() {
         console.log('WebSocket connection opened.');
         isConnected = true;
+        // Register the callback function with Go
+        console.log('Registering callback with Go...');
         stepSimulation(handlePartitionState, null);
+        console.log('Callback registered successfully');
     };
     socket.onmessage = async function(event) {
         if (debugMode) {
@@ -52,7 +88,8 @@ function startWebSocketClient() {
             console.log("*******************************************************");
             console.log("Client received values:", message.getValuesList());
         }
-        stepSimulation(handlePartitionState, new Uint8Array(event.data));
+        // Send WebSocket data to Go for processing
+        stepSimulation(null, new Uint8Array(event.data));
     };
     socket.onclose = function() {
         if (debugMode) {
@@ -67,33 +104,6 @@ function startWebSocketClient() {
         }
         isConnected = false;
         reconnect();
-    };
-    // Callback function
-    function handlePartitionState(data) {
-        const message = proto.PartitionState.deserializeBinary(new Uint8Array(data));
-        if (stopAtSimTime <= message.getCumulativeTimesteps()) return;
-        timesteps = message.getCumulativeTimesteps();
-        partitionName = message.getPartitionName();
-        state = message.getState().getValuesList();
-        if (debugMode) {
-            console.log("-------------------------------------------------------");
-            console.log("Cumulative Timesteps:", timesteps);
-            console.log("Partition Name:", partitionName);
-            console.log("State:", state);
-        }
-        // Send the data to the main display thread
-        self.postMessage({
-            type: 'partitionState',
-            data: {
-                timesteps: timesteps,
-                partitionName: partitionName,
-                state: state,
-            }
-        });
-        // Send the subset of the data to the server
-        if (serverPartitionNames.includes(partitionName)) {
-            socket.send(data);
-        }
     };
 }
 

@@ -21,6 +21,11 @@ func (j *JsCallbackOutputFunction) Output(
 	state []float64,
 	cumulativeTimesteps float64,
 ) {
+	// Check if callback is set before trying to invoke it
+	if j.callback == nil || j.callback.Type() != js.TypeFunction {
+		return // Skip output if callback is not ready
+	}
+
 	sendBytes, err := proto.Marshal(
 		&simulator.PartitionState{
 			CumulativeTimesteps: cumulativeTimesteps,
@@ -34,6 +39,7 @@ func (j *JsCallbackOutputFunction) Output(
 	uint8Array := js.Global().Get("Uint8Array").New(len(sendBytes))
 	js.CopyBytesToJS(uint8Array, sendBytes)
 	callback := *j.callback
+	// Call the callback with the Uint8Array directly
 	callback.Invoke(uint8Array)
 }
 

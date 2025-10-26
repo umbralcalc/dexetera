@@ -1,4 +1,3 @@
-import sys
 from dexact.server import ActionTaker, launch_websocket_server
 
 
@@ -13,11 +12,8 @@ class MinimalExampleActionTaker(ActionTaker):
         Also check out the controller cheatsheet if needed:
         umbralcalc.github.io/dexetera/cmd/minimal_example/cheatsheet.md
         """
-        print(
-            states["game_counter"],
-        )
-        sys.sleep(2)
-        return [2]
+        print(f"states: {states}")
+        return [states["counter_state"][0]+1]  # Increment by 1
 
 
 if __name__ == "__main__":

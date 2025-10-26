@@ -119,12 +119,7 @@
                 <canvas id="gameCanvas" width="400" height="200"></canvas>
             </div>
             
-            <div class="controls">
-                <button id="startBtn">Start Counter</button>
-                <button id="stopBtn" disabled>Stop Counter</button>
-            </div>
-            
-            <div class="status" id="status">Ready to start</div>
+            <div class="status" id="status">Waiting for server to start simulation...</div>
         </div>
         
         <div class="code-demo">
@@ -257,6 +252,8 @@ func (m *MinimalCounterIteration) Iterate(
                 
                 if (type === 'partitionState') {
                     updateVisualization(data);
+                    // Update status to show we're receiving data
+                    document.getElementById('status').textContent = `Counter: ${Math.floor(data.state[0])} (Server-controlled)`;
                 } else if (type === 'error') {
                     console.error('Worker error:', data);
                     document.getElementById('status').textContent = 'Error: ' + data;
@@ -285,34 +282,7 @@ func (m *MinimalCounterIteration) Iterate(
             }
         }
 
-        // Start simulation
-        function startSimulation() {
-            if (!isRunning) {
-                isRunning = true;
-                document.getElementById('startBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-                document.getElementById('status').textContent = 'Counter running...';
-                
-                // Start the simulation loop
-                worker.postMessage({ action: 'startSimulation' });
-            }
-        }
-
-        // Stop simulation
-        function stopSimulation() {
-            if (isRunning) {
-                isRunning = false;
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-                document.getElementById('status').textContent = 'Counter stopped';
-                
-                worker.postMessage({ action: 'stopSimulation' });
-            }
-        }
-
-        // Event listeners
-        document.getElementById('startBtn').addEventListener('click', startSimulation);
-        document.getElementById('stopBtn').addEventListener('click', stopSimulation);
+        // No client-side controls needed - server controls everything
 
         // Initialize when page loads
         window.addEventListener('load', initializeGame);
