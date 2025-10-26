@@ -22,10 +22,10 @@ func (j *JsCallbackOutputFunction) Output(
 	cumulativeTimesteps float64,
 ) {
 	sendBytes, err := proto.Marshal(
-		&PartitionState{
+		&simulator.PartitionState{
 			CumulativeTimesteps: cumulativeTimesteps,
 			PartitionName:       partitionName,
-			State:               &State{Values: state},
+			State:               state,
 		},
 	)
 	if err != nil {
@@ -51,7 +51,7 @@ func GenerateStepClosure(
 		*callback = args[0]
 		// Update action state from server if data is received
 		if !args[1].IsNull() {
-			var actionState State
+			var actionState ActionState
 			stateBytes := make([]byte, args[1].Get("length").Int())
 			js.CopyBytesToGo(stateBytes, args[1])
 			err := proto.Unmarshal(stateBytes, &actionState)
@@ -75,15 +75,22 @@ func RegisterStep(
 	handle string,
 	address string,
 ) {
+	// Add debugging
+	js.Global().Get("console").Call("log", "RegisterStep called")
+
 	var wg sync.WaitGroup
 	var callback js.Value
 	implementations.OutputFunction = &JsCallbackOutputFunction{
 		callback: &callback,
 	}
+
+	js.Global().Get("console").Call("log", "Creating PartitionCoordinator")
 	coordinator := simulator.NewPartitionCoordinator(
 		settings,
 		implementations,
 	)
+
+	js.Global().Get("console").Call("log", "Creating step closure")
 	step := GenerateStepClosure(
 		&wg,
 		&callback,
@@ -92,6 +99,10 @@ func RegisterStep(
 		handle,
 		address,
 	)
+
+	js.Global().Get("console").Call("log", "Registering stepSimulation function")
 	js.Global().Set("stepSimulation", js.FuncOf(step))
+	js.Global().Get("console").Call("log", "stepSimulation function registered successfully")
+
 	select {}
 }
