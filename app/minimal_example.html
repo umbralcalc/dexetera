@@ -253,7 +253,7 @@ func (m *MinimalCounterIteration) Iterate(
                 if (type === 'partitionState') {
                     updateVisualization(data);
                     // Update status to show we're receiving data
-                    document.getElementById('status').textContent = `Counter: ${Math.floor(data.state[0])} (Server-controlled)`;
+                    document.getElementById('status').textContent = `Counter: ${Math.floor(data.state.values[0])} (Server-controlled)`;
                 } else if (type === 'error') {
                     console.error('Worker error:', data);
                     document.getElementById('status').textContent = 'Error: ' + data;

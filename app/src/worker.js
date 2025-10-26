@@ -50,6 +50,7 @@ function handlePartitionState(data) {
     timesteps = message.getCumulativeTimesteps();
     partitionName = message.getPartitionName();
     state = message.getStateList();
+    
     if (debugMode) {
         console.log("-------------------------------------------------------");
         console.log("Cumulative Timesteps:", timesteps);
@@ -62,11 +63,13 @@ function handlePartitionState(data) {
         data: {
             timesteps: timesteps,
             partitionName: partitionName,
-            state: state,
+            state: {
+                values: state
+            },
         }
     });
-    // Send the subset of the data to the server
-    if (serverPartitionNames.includes(partitionName)) {
+    // Send the subset of the data to the server only if WebSocket is ready
+    if (serverPartitionNames.includes(partitionName) && socket && socket.readyState === WebSocket.OPEN) {
         socket.send(data);
     }
 }
@@ -78,9 +81,11 @@ function startWebSocketClient() {
         console.log('WebSocket connection opened.');
         isConnected = true;
         // Register the callback function with Go
-        console.log('Registering callback with Go...');
         stepSimulation(handlePartitionState, null);
-        console.log('Callback registered successfully');
+        
+        // Send initial message to start the simulation
+        const initialMessage = new Uint8Array([1, 2, 3, 4, 5]); // Simple initial data
+        socket.send(initialMessage);
     };
     socket.onmessage = async function(event) {
         if (debugMode) {
