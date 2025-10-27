@@ -28,8 +28,7 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 		WithDescription("The simplest possible game - just a counter").
 		WithPartition("counter", "counter_state", &MinimalCounterIteration{}).
 		WithServerPartition("counter_state").
-		WithParameter("counter_init", []float64{0.0}).
-		WithParameter("counter_params", map[string][]float64{"increment": {1.0}}).
+		WithParameter("param_values", []float64{0.0}).
 		WithMaxTime(30.0).
 		WithTimestep(1.0).
 		WithVisualization(visConfig).
@@ -56,45 +55,31 @@ func (m *MinimalExampleGame) GetConfig() *GameConfig {
 // GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
 // configuration step-by-step using the fluent API
 func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
-	// Get initial value from counter_init parameter
-	var initialValue float64 = 0.0
-	if initParam, exists := m.config.Parameters["counter_init"]; exists {
-		if initValues, ok := initParam.([]float64); ok && len(initValues) > 0 {
-			initialValue = initValues[0]
-		}
-	}
-
-	// Get increment from counter_params parameter
-	var increment float64 = 1.0
-	if paramsParam, exists := m.config.Parameters["counter_params"]; exists {
-		if params, ok := paramsParam.(map[string][]float64); ok {
-			if incrementValues, exists := params["increment"]; exists && len(incrementValues) > 0 {
-				increment = incrementValues[0]
-			}
-		}
-	}
-
 	// Create a new ConfigGenerator
-	configGen := simulator.NewConfigGenerator()
+	generator := simulator.NewConfigGenerator()
 
 	// Set global seed
-	configGen.SetGlobalSeed(42)
+	generator.SetGlobalSeed(42)
 
 	// Configure the counter partition
 	counterPartition := &simulator.PartitionConfig{
 		Name:            "counter_state",
-		Params:          simulator.NewParams(map[string][]float64{"increment": {increment}}),
-		InitStateValues: []float64{initialValue},
+		Params:          simulator.NewParams(make(map[string][]float64)),
+		InitStateValues: []float64{0.0},
 	}
-	configGen.SetPartition(counterPartition)
+	generator.SetPartition(counterPartition)
 
 	// Configure simulation-level settings
 	simulationConfig := &simulator.SimulationConfig{
-		InitTimeValue: 0.0,
+		// OutputFunction is configured as the JS callback function
+		OutputCondition:      &simulator.EveryStepOutputCondition{},
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{MaxTimeElapsed: 31.0},
+		TimestepFunction:     &simulator.ConstantTimestepFunction{Stepsize: 1.0},
+		InitTimeValue:        0.0,
 	}
-	configGen.SetSimulation(simulationConfig)
+	generator.SetSimulation(simulationConfig)
 
-	return configGen
+	return generator
 }
 
 // GetRenderer returns the visualization renderer
@@ -118,11 +103,11 @@ func (m *MinimalCounterIteration) Iterate(
 	stateHistories []*simulator.StateHistory,
 	timestepsHistory *simulator.CumulativeTimestepsHistory,
 ) []float64 {
-	outputState := stateHistories[partitionIndex].Values.RawRowView(0)
-	increment := params.Get("increment")[0]
+	outputState := stateHistories[partitionIndex].CopyStateRow(0)
 
-	// Simple counter: just increment the value
-	outputState[0] += increment
+	// Simple counter: get the output "param_values" from the ActionState
+	// sent by the Python server
+	outputState[0] = params.Get("param_values")[0]
 
 	return outputState
 }
