@@ -10,11 +10,40 @@ type BuilderExampleGame struct {
 	config *GameConfig
 }
 
-// NewBuilderExampleGame creates a new game using the GameBuilder pattern
+// NewBuilderExampleGame creates a new game using the GameBuilder and VisualizationBuilder patterns
 func NewBuilderExampleGame() *BuilderExampleGame {
+	// Create a complex visualization using VisualizationBuilder
+	visConfig := NewVisualizationBuilder().
+		WithCanvas(600, 400).
+		WithBackground("#1a1a1a").
+		WithUpdateInterval(50).
+		AddText("counter_state", "Counter: {value}", 150, 100, &TextOptions{
+			FontSize:   24,
+			Color:      "#00ff00",
+			FontFamily: "Arial",
+			TextAlign:  "left",
+		}).
+		AddText("timer_state", "Timer: {value}", 450, 100, &TextOptions{
+			FontSize:   24,
+			Color:      "#ff0000",
+			FontFamily: "Arial",
+			TextAlign:  "left",
+		}).
+		AddCircle("counter_state", 150, 200, 20, &ShapeOptions{
+			FillColor:   "#00ff00",
+			StrokeColor: "#ffffff",
+			StrokeWidth: 2,
+		}).
+		AddRectangle("timer_state", 400, 180, 100, 40, &ShapeOptions{
+			FillColor:   "#ff0000",
+			StrokeColor: "#ffffff",
+			StrokeWidth: 2,
+		}).
+		Build()
+
 	// Create a complex game using the fluent API
 	config := NewGameBuilder("builder_example").
-		WithDescription("A complex game demonstrating the GameBuilder pattern").
+		WithDescription("A complex game demonstrating the GameBuilder and VisualizationBuilder patterns").
 		WithPartition("counter", "counter_state", &CounterIteration{}).
 		WithPartition("timer", "timer_state", &TimerIteration{}).
 		WithServerPartition("counter_state").
@@ -25,57 +54,7 @@ func NewBuilderExampleGame() *BuilderExampleGame {
 		WithParameter("timer_params", map[string][]float64{"speed": {0.1}}).
 		WithMaxTime(60.0).
 		WithTimestep(1.0).
-		WithVisualization(&VisualizationConfig{
-			CanvasWidth:      600,
-			CanvasHeight:     400,
-			BackgroundColor:  "#1a1a1a",
-			UpdateIntervalMs: 50,
-			Renderers: []RendererConfig{
-				{
-					Type:          "text",
-					PartitionName: "counter_state",
-					Properties: map[string]interface{}{
-						"fontSize": 24,
-						"color":    "#00ff00",
-						"x":        150,
-						"y":        100,
-						"text":     "Counter: {value}",
-					},
-				},
-				{
-					Type:          "text",
-					PartitionName: "timer_state",
-					Properties: map[string]interface{}{
-						"fontSize": 24,
-						"color":    "#ff0000",
-						"x":        450,
-						"y":        100,
-						"text":     "Timer: {value}",
-					},
-				},
-				{
-					Type:          "circle",
-					PartitionName: "counter_state",
-					Properties: map[string]interface{}{
-						"color":  "#00ff00",
-						"x":      150,
-						"y":      200,
-						"radius": 20,
-					},
-				},
-				{
-					Type:          "rectangle",
-					PartitionName: "timer_state",
-					Properties: map[string]interface{}{
-						"color":  "#ff0000",
-						"x":      400,
-						"y":      180,
-						"width":  100,
-						"height": 40,
-					},
-				},
-			},
-		}).
+		WithVisualization(visConfig).
 		Build()
 
 	return &BuilderExampleGame{config: config}

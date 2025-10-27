@@ -31,13 +31,13 @@
             gap: 20px;
         }
         
-        .minimal-example {
+        .generic-game {
             background-color: #2a2a2a;
             border: 2px solid #444;
             border-radius: 8px;
         }
-        
-        .minimal-example canvas {
+
+        .generic-game canvas {
             display: block;
             margin: 0 auto;
         }
@@ -115,7 +115,7 @@
         <h1>🎮 Minimal Example Game</h1>
         
         <div class="game-area">
-            <div class="minimal-example">
+            <div class="generic-game">
                 <canvas id="gameCanvas" width="400" height="200"></canvas>
             </div>
             
@@ -130,8 +130,20 @@ type MinimalExampleGame struct {
     config *GameConfig
 }
 
-// 2. Use the GameBuilder pattern for easy configuration
+// 2. Use the VisualizationBuilder for easy visualization configuration
 func NewMinimalExampleGame() *MinimalExampleGame {
+    // Create visualization using VisualizationBuilder
+    visConfig := NewVisualizationBuilder().
+        WithCanvas(400, 200).
+        WithBackground("#2a2a2a").
+        WithUpdateInterval(100).
+        AddText("counter_state", "Count: {value}", 200, 100, &TextOptions{
+            FontSize: 24,
+            Color:    "#ffffff",
+        }).
+        Build()
+    
+    // Create the game using GameBuilder
     config := NewGameBuilder("minimal_example").
         WithDescription("The simplest possible game - just a counter").
         WithPartition("counter", "counter_state", &MinimalCounterIteration{}).
@@ -140,25 +152,7 @@ func NewMinimalExampleGame() *MinimalExampleGame {
         WithParameter("counter_params", map[string][]float64{"increment": {1.0}}).
         WithMaxTime(30.0).
         WithTimestep(1.0).
-        WithVisualization(&VisualizationConfig{
-            CanvasWidth:      400,
-            CanvasHeight:     200,
-            BackgroundColor:  "#2a2a2a",
-            UpdateIntervalMs: 100,
-            Renderers: []RendererConfig{
-                {
-                    Type:          "text",
-                    PartitionName: "counter_state",
-                    Properties: map[string]interface{}{
-                        "fontSize": 24,
-                        "color":    "#ffffff",
-                        "x":        200,
-                        "y":        100,
-                        "text":     "Count: {value}",
-                    },
-                },
-            },
-        }).
+        WithVisualization(visConfig).
         Build()
     
     return &MinimalExampleGame{config: config}
@@ -243,42 +237,116 @@ func (m *MinimalCounterIteration) Iterate(
             }
         };
 
-        // Minimal example renderer
-        class MinimalExampleRenderer {
+        // Generic renderer (automatically generated from Go VisualizationBuilder)
+        class GenericRenderer {
             constructor(canvas, config) {
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
                 this.config = config;
-                this.counterValue = 0;
+                this.state = {};
             }
             
             update(partitionState) {
-                if (partitionState.partitionName === 'counter_state') {
-                    this.counterValue = partitionState.state.values[0];
-                }
+                this.state[partitionState.partitionName] = partitionState.state.values;
             }
             
             render() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // Draw counter text
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = '24px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('Count: ' + Math.floor(this.counterValue), 
-                                  this.canvas.width / 2, this.canvas.height / 2);
+                // Render each configured renderer
+                this.config.renderers.forEach(renderer => {
+                    this.renderElement(renderer);
+                });
+            }
+            
+            renderElement(renderer) {
+                const state = this.state[renderer.partitionName];
+                if (!state) return;
+                
+                switch (renderer.type) {
+                    case 'text':
+                        this.renderText(renderer, state);
+                        break;
+                    case 'circle':
+                        this.renderCircle(renderer, state);
+                        break;
+                    case 'rectangle':
+                        this.renderRectangle(renderer, state);
+                        break;
+                }
+            }
+            
+            renderText(renderer, state) {
+                this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+                this.ctx.font = (renderer.properties.fontSize || 16) + 'px ' + (renderer.properties.fontFamily || 'Arial');
+                this.ctx.textAlign = renderer.properties.textAlign || 'center';
+                
+                let text = renderer.properties.text || '{value}';
+                text = text.replace('{value}', Math.floor(state[0] || 0));
+                
+                this.ctx.fillText(text, 
+                                  renderer.properties.x || this.canvas.width / 2,
+                                  renderer.properties.y || this.canvas.height / 2);
+            }
+            
+            renderCircle(renderer, state) {
+                const x = renderer.properties.x || this.canvas.width / 2;
+                const y = renderer.properties.y || this.canvas.height / 2;
+                const radius = renderer.properties.radius || 10;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                
+                if (renderer.properties.fillColor) {
+                    this.ctx.fillStyle = renderer.properties.fillColor;
+                    this.ctx.fill();
+                }
+                
+                if (renderer.properties.strokeColor) {
+                    this.ctx.strokeStyle = renderer.properties.strokeColor;
+                    this.ctx.lineWidth = renderer.properties.strokeWidth || 1;
+                    this.ctx.stroke();
+                }
+                
+                if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
+                    this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+                    this.ctx.fill();
+                }
+            }
+            
+            renderRectangle(renderer, state) {
+                const x = renderer.properties.x || 0;
+                const y = renderer.properties.y || 0;
+                const width = renderer.properties.width || 50;
+                const height = renderer.properties.height || 50;
+                
+                if (renderer.properties.fillColor) {
+                    this.ctx.fillStyle = renderer.properties.fillColor;
+                    this.ctx.fillRect(x, y, width, height);
+                }
+                
+                if (renderer.properties.strokeColor) {
+                    this.ctx.strokeStyle = renderer.properties.strokeColor;
+                    this.ctx.lineWidth = renderer.properties.strokeWidth || 1;
+                    this.ctx.strokeRect(x, y, width, height);
+                }
+                
+                if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
+                    this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+                    this.ctx.fillRect(x, y, width, height);
+                }
             }
         }
 
         // Global variables
-        let minimalRenderer = null;
+        let genericRenderer = null;
         let worker = null;
         let isRunning = false;
 
         // Initialize the game
         function initializeGame() {
             const canvas = document.getElementById('gameCanvas');
-            minimalRenderer = new MinimalExampleRenderer(canvas, gameConfig.visualization);
+            genericRenderer = new GenericRenderer(canvas, gameConfig.visualization);
             
             // Set up worker for WebAssembly
             worker = new Worker('../src/worker.js');
@@ -312,9 +380,9 @@ func (m *MinimalCounterIteration) Iterate(
 
         // Update visualization with new counter value
         function updateVisualization(partitionState) {
-            if (minimalRenderer) {
-                minimalRenderer.update(partitionState);
-                minimalRenderer.render();
+            if (genericRenderer) {
+                genericRenderer.update(partitionState);
+                genericRenderer.render();
             }
         }
 

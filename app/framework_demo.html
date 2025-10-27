@@ -155,8 +155,27 @@ func (g *MyGame) GetName() string {
     return "my_game"
 }
 
-// Using the GameBuilder pattern for complex games
+// Using the VisualizationBuilder for complex visualizations
 func NewMyGame() *MyGame {
+    // Create visualization using VisualizationBuilder
+    visConfig := NewVisualizationBuilder().
+        WithCanvas(600, 400).
+        WithBackground("#1a1a1a").
+        WithUpdateInterval(50).
+        AddText("game_state", "Game State: {value}", 300, 200, &TextOptions{
+            FontSize:   20,
+            Color:      "#00ffff",
+            FontFamily: "Arial",
+            TextAlign:  "center",
+        }).
+        AddCircle("game_state", 300, 300, 30, &ShapeOptions{
+            FillColor:   "#00ffff",
+            StrokeColor: "#ffffff",
+            StrokeWidth: 2,
+        }).
+        Build()
+    
+    // Create the game using GameBuilder
     config := NewGameBuilder("my_game").
         WithDescription("A more complex game example").
         WithPartition("game", "game_state", &MyGameIteration{}).
@@ -165,35 +184,7 @@ func NewMyGame() *MyGame {
         WithParameter("game_params", map[string][]float64{"speed": {2.0}}).
         WithMaxTime(60.0).
         WithTimestep(1.0).
-        WithVisualization(&VisualizationConfig{
-            CanvasWidth:      600,
-            CanvasHeight:     400,
-            BackgroundColor:  "#1a1a1a",
-            UpdateIntervalMs: 50,
-            Renderers: []RendererConfig{
-                {
-                    Type:          "text",
-                    PartitionName: "game_state",
-                    Properties: map[string]interface{}{
-                        "fontSize": 20,
-                        "color":    "#00ffff",
-                        "x":        300,
-                        "y":        200,
-                        "text":     "Game State: {value}",
-                    },
-                },
-                {
-                    Type:          "circle",
-                    PartitionName: "game_state",
-                    Properties: map[string]interface{}{
-                        "color":  "#00ffff",
-                        "x":      300,
-                        "y":      300,
-                        "radius": 30,
-                    },
-                },
-            },
-        }).
+        WithVisualization(visConfig).
         Build()
     
     return &MyGame{config: config}
@@ -223,28 +214,54 @@ func (g *MyGame) GetConfigGenerator() *simulator.ConfigGenerator {
         </div>
         
         <div class="demo-section">
-            <h2>🎨 Go-driven Visualizations</h2>
-            <p>The framework allows Go code to specify how games should be rendered:</p>
+            <h2>🎨 Go-driven Visualizations with VisualizationBuilder</h2>
+            <p>The framework provides a powerful VisualizationBuilder that allows Go code to specify complex visualizations:</p>
             
             <div class="code-example">
-                <pre>func (r *MyGameRenderer) GetVisualizationConfig() *VisualizationConfig {
-    return &VisualizationConfig{
-        CanvasWidth: 800,
-        CanvasHeight: 600,
-        BackgroundColor: "#1a1a1a",
-        Renderers: []RendererConfig{
-            {
-                Type: "circle",
-                PartitionName: "game_state",
-                Properties: map[string]interface{}{
-                    "radius": 10.0,
-                    "color": "#00ff88",
-                },
-            },
-        },
-    }
-}</pre>
+                <pre>// VisualizationBuilder provides a fluent API for complex visualizations
+visConfig := NewVisualizationBuilder().
+    WithCanvas(800, 600).
+    WithBackground("#0a0a0a").
+    WithUpdateInterval(50).
+    AddText("counter_state", "Counter: {value}", 100, 50, &TextOptions{
+        FontSize:   24,
+        Color:      "#00ff00",
+        FontFamily: "Arial",
+        TextAlign:  "left",
+    }).
+    AddCircle("counter_state", 200, 200, 30, &ShapeOptions{
+        FillColor:   "#00ff00",
+        StrokeColor: "#ffffff",
+        StrokeWidth: 2,
+    }).
+    AddRectangle("timer_state", 300, 170, 100, 60, &ShapeOptions{
+        FillColor:   "#ff0000",
+        StrokeColor: "#ffffff",
+        StrokeWidth: 2,
+    }).
+    AddBarChart("counter_state", 50, 450, 200, 100, &ChartOptions{
+        Color:       "#00ff00",
+        MaxValue:    100,
+        ShowLabels:  true,
+        LabelFormat: "Count: {value}",
+    }).
+    AddLineChart("timer_state", 300, 450, 200, 100, &ChartOptions{
+        Color:       "#ff0000",
+        MaxValue:    50,
+        ShowLabels:  true,
+        LabelFormat: "Time: {value}s",
+        LineWidth:   3,
+    }).
+    Build()</pre>
             </div>
+            
+            <h3>Supported Renderer Types:</h3>
+            <ul>
+                <li><strong>Text:</strong> Customizable fonts, colors, alignment</li>
+                <li><strong>Shapes:</strong> Circles and rectangles with fill/stroke options</li>
+                <li><strong>Lines:</strong> With customizable width and dash patterns</li>
+                <li><strong>Charts:</strong> Bar charts and line charts with real-time updates</li>
+            </ul>
         </div>
         
         <div class="demo-section">

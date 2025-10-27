@@ -10,8 +10,19 @@ type MinimalExampleGame struct {
 	config *GameConfig
 }
 
-// NewMinimalExampleGame creates a new minimal example game using GameBuilder
+// NewMinimalExampleGame creates a new minimal example game using GameBuilder and VisualizationBuilder
 func NewMinimalExampleGame() *MinimalExampleGame {
+	// Create visualization using VisualizationBuilder
+	visConfig := NewVisualizationBuilder().
+		WithCanvas(400, 200).
+		WithBackground("#2a2a2a").
+		WithUpdateInterval(100).
+		AddText("counter_state", "Count: {value}", 200, 100, &TextOptions{
+			FontSize: 24,
+			Color:    "#ffffff",
+		}).
+		Build()
+
 	// Create the game using the fluent GameBuilder API
 	config := NewGameBuilder("minimal_example").
 		WithDescription("The simplest possible game - just a counter").
@@ -21,25 +32,7 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 		WithParameter("counter_params", map[string][]float64{"increment": {1.0}}).
 		WithMaxTime(30.0).
 		WithTimestep(1.0).
-		WithVisualization(&VisualizationConfig{
-			CanvasWidth:      400,
-			CanvasHeight:     200,
-			BackgroundColor:  "#2a2a2a",
-			UpdateIntervalMs: 100,
-			Renderers: []RendererConfig{
-				{
-					Type:          "text",
-					PartitionName: "counter_state",
-					Properties: map[string]interface{}{
-						"fontSize": 24,
-						"color":    "#ffffff",
-						"x":        200,
-						"y":        100,
-						"text":     "Count: {value}",
-					},
-				},
-			},
-		}).
+		WithVisualization(visConfig).
 		Build()
 
 	return &MinimalExampleGame{config: config}
@@ -91,7 +84,7 @@ func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
 
 // GetRenderer returns the visualization renderer
 func (m *MinimalExampleGame) GetRenderer() GameRenderer {
-	return &MinimalExampleRenderer{config: m.config.VisualizationConfig}
+	return &GenericRenderer{config: m.config.VisualizationConfig}
 }
 
 // MinimalCounterIteration implements the simplest possible counter
@@ -117,73 +110,4 @@ func (m *MinimalCounterIteration) Iterate(
 	outputState[0] += increment
 
 	return outputState
-}
-
-// MinimalExampleRenderer handles the visualization
-type MinimalExampleRenderer struct {
-	config *VisualizationConfig
-}
-
-func (r *MinimalExampleRenderer) GetVisualizationConfig() *VisualizationConfig {
-	return r.config
-}
-
-func (r *MinimalExampleRenderer) GetJavaScriptCode() string {
-	return `
-// Minimal example visualization JavaScript
-class MinimalExampleRenderer {
-    constructor(canvas, config) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        this.config = config;
-        this.counterValue = 0;
-    }
-    
-    update(partitionState) {
-        if (partitionState.partitionName === 'counter_state') {
-            this.counterValue = partitionState.state.values[0];
-        }
-    }
-    
-    render() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw counter text
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = '24px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('Count: ' + Math.floor(this.counterValue), 
-                          this.canvas.width / 2, this.canvas.height / 2);
-    }
-}
-
-// Global renderer instance
-let minimalRenderer = null;
-
-function initializeRenderer(canvas, config) {
-    minimalRenderer = new MinimalExampleRenderer(canvas, config);
-}
-
-function updateVisualization(partitionState) {
-    if (minimalRenderer) {
-        minimalRenderer.update(partitionState);
-        minimalRenderer.render();
-    }
-}
-`
-}
-
-func (r *MinimalExampleRenderer) GetCSSCode() string {
-	return `
-.minimal-example {
-    background-color: #2a2a2a;
-    border: 2px solid #444;
-    border-radius: 8px;
-}
-
-.minimal-example canvas {
-    display: block;
-    margin: 0 auto;
-}
-`
 }

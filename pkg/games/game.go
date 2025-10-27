@@ -81,6 +81,272 @@ type RendererConfig struct {
 	Properties map[string]interface{}
 }
 
+// VisualizationBuilder provides a fluent API for building complex visualizations
+type VisualizationBuilder struct {
+	config *VisualizationConfig
+}
+
+// NewVisualizationBuilder creates a new VisualizationBuilder
+func NewVisualizationBuilder() *VisualizationBuilder {
+	return &VisualizationBuilder{
+		config: &VisualizationConfig{
+			CanvasWidth:      400,
+			CanvasHeight:     200,
+			BackgroundColor:  "#2a2a2a",
+			UpdateIntervalMs: 100,
+			Renderers:        make([]RendererConfig, 0),
+		},
+	}
+}
+
+// WithCanvas sets the canvas dimensions
+func (vb *VisualizationBuilder) WithCanvas(width, height int) *VisualizationBuilder {
+	vb.config.CanvasWidth = width
+	vb.config.CanvasHeight = height
+	return vb
+}
+
+// WithBackground sets the background color
+func (vb *VisualizationBuilder) WithBackground(color string) *VisualizationBuilder {
+	vb.config.BackgroundColor = color
+	return vb
+}
+
+// WithUpdateInterval sets the update interval in milliseconds
+func (vb *VisualizationBuilder) WithUpdateInterval(ms int) *VisualizationBuilder {
+	vb.config.UpdateIntervalMs = ms
+	return vb
+}
+
+// AddText adds a text renderer
+func (vb *VisualizationBuilder) AddText(partitionName string, text string, x, y int, options *TextOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"text": text,
+		"x":    x,
+		"y":    y,
+	}
+
+	if options != nil {
+		if options.FontSize != 0 {
+			props["fontSize"] = options.FontSize
+		}
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.FontFamily != "" {
+			props["fontFamily"] = options.FontFamily
+		}
+		if options.TextAlign != "" {
+			props["textAlign"] = options.TextAlign
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "text",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddCircle adds a circle renderer
+func (vb *VisualizationBuilder) AddCircle(partitionName string, x, y, radius int, options *ShapeOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x":      x,
+		"y":      y,
+		"radius": radius,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.FillColor != "" {
+			props["fillColor"] = options.FillColor
+		}
+		if options.StrokeColor != "" {
+			props["strokeColor"] = options.StrokeColor
+		}
+		if options.StrokeWidth != 0 {
+			props["strokeWidth"] = options.StrokeWidth
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "circle",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddRectangle adds a rectangle renderer
+func (vb *VisualizationBuilder) AddRectangle(partitionName string, x, y, width, height int, options *ShapeOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x":      x,
+		"y":      y,
+		"width":  width,
+		"height": height,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.FillColor != "" {
+			props["fillColor"] = options.FillColor
+		}
+		if options.StrokeColor != "" {
+			props["strokeColor"] = options.StrokeColor
+		}
+		if options.StrokeWidth != 0 {
+			props["strokeWidth"] = options.StrokeWidth
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "rectangle",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddLine adds a line renderer
+func (vb *VisualizationBuilder) AddLine(partitionName string, x1, y1, x2, y2 int, options *LineOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x1": x1,
+		"y1": y1,
+		"x2": x2,
+		"y2": y2,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.Width != 0 {
+			props["width"] = options.Width
+		}
+		if options.DashPattern != nil {
+			props["dashPattern"] = options.DashPattern
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "line",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddBarChart adds a bar chart renderer
+func (vb *VisualizationBuilder) AddBarChart(partitionName string, x, y, width, height int, options *ChartOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x":      x,
+		"y":      y,
+		"width":  width,
+		"height": height,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.MaxValue != 0 {
+			props["maxValue"] = options.MaxValue
+		}
+		if options.ShowLabels {
+			props["showLabels"] = options.ShowLabels
+		}
+		if options.LabelFormat != "" {
+			props["labelFormat"] = options.LabelFormat
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "barChart",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddLineChart adds a line chart renderer
+func (vb *VisualizationBuilder) AddLineChart(partitionName string, x, y, width, height int, options *ChartOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x":      x,
+		"y":      y,
+		"width":  width,
+		"height": height,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.MaxValue != 0 {
+			props["maxValue"] = options.MaxValue
+		}
+		if options.ShowLabels {
+			props["showLabels"] = options.ShowLabels
+		}
+		if options.LabelFormat != "" {
+			props["labelFormat"] = options.LabelFormat
+		}
+		if options.LineWidth != 0 {
+			props["lineWidth"] = options.LineWidth
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "lineChart",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// Build creates the final VisualizationConfig
+func (vb *VisualizationBuilder) Build() *VisualizationConfig {
+	return vb.config
+}
+
+// Options structs for different renderer types
+
+// TextOptions provides options for text rendering
+type TextOptions struct {
+	FontSize   int
+	Color      string
+	FontFamily string
+	TextAlign  string
+}
+
+// ShapeOptions provides options for shape rendering
+type ShapeOptions struct {
+	Color       string
+	FillColor   string
+	StrokeColor string
+	StrokeWidth int
+}
+
+// LineOptions provides options for line rendering
+type LineOptions struct {
+	Color       string
+	Width       int
+	DashPattern []int
+}
+
+// ChartOptions provides options for chart rendering
+type ChartOptions struct {
+	Color       string
+	MaxValue    float64
+	ShowLabels  bool
+	LabelFormat string
+	LineWidth   int
+}
+
 // ImplementationConfig holds configuration for simulation implementations
 type ImplementationConfig struct {
 	// Iterations defines the iteration implementations for each partition
@@ -416,17 +682,32 @@ func (r *GenericRenderer) GetVisualizationConfig() *VisualizationConfig {
 
 func (r *GenericRenderer) GetJavaScriptCode() string {
 	return `
-// Generic renderer JavaScript
+// Enhanced Generic renderer JavaScript with support for all renderer types
 class GenericRenderer {
     constructor(canvas, config) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.config = config;
         this.state = {};
+        this.history = {}; // For charts
     }
     
     update(partitionState) {
         this.state[partitionState.partitionName] = partitionState.state.values;
+        
+        // Store history for charts
+        if (!this.history[partitionState.partitionName]) {
+            this.history[partitionState.partitionName] = [];
+        }
+        this.history[partitionState.partitionName].push({
+            value: partitionState.state.values[0] || 0,
+            time: partitionState.cumulativeTimesteps || 0
+        });
+        
+        // Keep only last 100 points for performance
+        if (this.history[partitionState.partitionName].length > 100) {
+            this.history[partitionState.partitionName].shift();
+        }
     }
     
     render() {
@@ -452,13 +733,22 @@ class GenericRenderer {
             case 'rectangle':
                 this.renderRectangle(renderer, state);
                 break;
+            case 'line':
+                this.renderLine(renderer, state);
+                break;
+            case 'barChart':
+                this.renderBarChart(renderer, state);
+                break;
+            case 'lineChart':
+                this.renderLineChart(renderer, state);
+                break;
         }
     }
     
     renderText(renderer, state) {
         this.ctx.fillStyle = renderer.properties.color || '#ffffff';
-        this.ctx.font = (renderer.properties.fontSize || 16) + 'px Arial';
-        this.ctx.textAlign = 'center';
+        this.ctx.font = (renderer.properties.fontSize || 16) + 'px ' + (renderer.properties.fontFamily || 'Arial');
+        this.ctx.textAlign = renderer.properties.textAlign || 'center';
         
         let text = renderer.properties.text || '{value}';
         text = text.replace('{value}', Math.floor(state[0] || 0));
@@ -469,21 +759,140 @@ class GenericRenderer {
     }
     
     renderCircle(renderer, state) {
-        this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+        const x = renderer.properties.x || this.canvas.width / 2;
+        const y = renderer.properties.y || this.canvas.height / 2;
+        const radius = renderer.properties.radius || 10;
+        
         this.ctx.beginPath();
-        this.ctx.arc(renderer.properties.x || this.canvas.width / 2,
-                     renderer.properties.y || this.canvas.height / 2,
-                     renderer.properties.radius || 10,
-                     0, 2 * Math.PI);
-        this.ctx.fill();
+        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        
+        if (renderer.properties.fillColor) {
+            this.ctx.fillStyle = renderer.properties.fillColor;
+            this.ctx.fill();
+        }
+        
+        if (renderer.properties.strokeColor) {
+            this.ctx.strokeStyle = renderer.properties.strokeColor;
+            this.ctx.lineWidth = renderer.properties.strokeWidth || 1;
+            this.ctx.stroke();
+        }
+        
+        if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
+            this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+            this.ctx.fill();
+        }
     }
     
     renderRectangle(renderer, state) {
-        this.ctx.fillStyle = renderer.properties.color || '#ffffff';
-        this.ctx.fillRect(renderer.properties.x || 0,
-                         renderer.properties.y || 0,
-                         renderer.properties.width || 50,
-                         renderer.properties.height || 50);
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 50;
+        const height = renderer.properties.height || 50;
+        
+        if (renderer.properties.fillColor) {
+            this.ctx.fillStyle = renderer.properties.fillColor;
+            this.ctx.fillRect(x, y, width, height);
+        }
+        
+        if (renderer.properties.strokeColor) {
+            this.ctx.strokeStyle = renderer.properties.strokeColor;
+            this.ctx.lineWidth = renderer.properties.strokeWidth || 1;
+            this.ctx.strokeRect(x, y, width, height);
+        }
+        
+        if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
+            this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+            this.ctx.fillRect(x, y, width, height);
+        }
+    }
+    
+    renderLine(renderer, state) {
+        this.ctx.strokeStyle = renderer.properties.color || '#ffffff';
+        this.ctx.lineWidth = renderer.properties.width || 1;
+        
+        if (renderer.properties.dashPattern) {
+            this.ctx.setLineDash(renderer.properties.dashPattern);
+        }
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(renderer.properties.x1 || 0, renderer.properties.y1 || 0);
+        this.ctx.lineTo(renderer.properties.x2 || 100, renderer.properties.y2 || 100);
+        this.ctx.stroke();
+        
+        this.ctx.setLineDash([]); // Reset dash pattern
+    }
+    
+    renderBarChart(renderer, state) {
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 200;
+        const height = renderer.properties.height || 100;
+        const maxValue = renderer.properties.maxValue || 100;
+        const value = Math.min(state[0] || 0, maxValue);
+        
+        // Draw background
+        this.ctx.fillStyle = '#333333';
+        this.ctx.fillRect(x, y, width, height);
+        
+        // Draw bar
+        const barHeight = (value / maxValue) * height;
+        this.ctx.fillStyle = renderer.properties.color || '#00ff00';
+        this.ctx.fillRect(x, y + height - barHeight, width, barHeight);
+        
+        // Draw labels
+        if (renderer.properties.showLabels) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px Arial';
+            this.ctx.textAlign = 'center';
+            const labelFormat = renderer.properties.labelFormat || '{value}';
+            const label = labelFormat.replace('{value}', Math.floor(value));
+            this.ctx.fillText(label, x + width / 2, y + height + 15);
+        }
+    }
+    
+    renderLineChart(renderer, state) {
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 200;
+        const height = renderer.properties.height || 100;
+        const maxValue = renderer.properties.maxValue || 100;
+        const lineWidth = renderer.properties.lineWidth || 2;
+        
+        const history = this.history[renderer.partitionName] || [];
+        if (history.length < 2) return;
+        
+        // Draw background
+        this.ctx.fillStyle = '#333333';
+        this.ctx.fillRect(x, y, width, height);
+        
+        // Draw line
+        this.ctx.strokeStyle = renderer.properties.color || '#00ff00';
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.beginPath();
+        
+        history.forEach((point, index) => {
+            const pointX = x + (index / (history.length - 1)) * width;
+            const pointY = y + height - (Math.min(point.value, maxValue) / maxValue) * height;
+            
+            if (index === 0) {
+                this.ctx.moveTo(pointX, pointY);
+            } else {
+                this.ctx.lineTo(pointX, pointY);
+            }
+        });
+        
+        this.ctx.stroke();
+        
+        // Draw labels
+        if (renderer.properties.showLabels && history.length > 0) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px Arial';
+            this.ctx.textAlign = 'center';
+            const labelFormat = renderer.properties.labelFormat || '{value}';
+            const currentValue = history[history.length - 1].value;
+            const label = labelFormat.replace('{value}', Math.floor(currentValue));
+            this.ctx.fillText(label, x + width / 2, y + height + 15);
+        }
     }
 }
 
