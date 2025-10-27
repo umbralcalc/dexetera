@@ -10,54 +10,39 @@ type MinimalExampleGame struct {
 	config *GameConfig
 }
 
-// NewMinimalExampleGame creates a new minimal example game
+// NewMinimalExampleGame creates a new minimal example game using GameBuilder
 func NewMinimalExampleGame() *MinimalExampleGame {
-	return &MinimalExampleGame{
-		config: &GameConfig{
-			Name:        "minimal_example",
-			Description: "The simplest possible game - just a counter",
-			PartitionNames: map[string]string{
-				"counter": "counter_state",
-			},
-			ServerPartitionNames: []string{"counter_state"},
-			VisualizationConfig: &VisualizationConfig{
-				CanvasWidth:      400,
-				CanvasHeight:     200,
-				BackgroundColor:  "#2a2a2a",
-				UpdateIntervalMs: 100,
-				Renderers: []RendererConfig{
-					{
-						Type:          "text",
-						PartitionName: "counter_state",
-						Properties: map[string]interface{}{
-							"fontSize": 24,
-							"color":    "#ffffff",
-							"x":        200,
-							"y":        100,
-							"text":     "Count: {value}",
-						},
+	// Create the game using the fluent GameBuilder API
+	config := NewGameBuilder("minimal_example").
+		WithDescription("The simplest possible game - just a counter").
+		WithPartition("counter", "counter_state", &MinimalCounterIteration{}).
+		WithServerPartition("counter_state").
+		WithParameter("counter_init", []float64{0.0}).
+		WithParameter("counter_params", map[string][]float64{"increment": {1.0}}).
+		WithMaxTime(30.0).
+		WithTimestep(1.0).
+		WithVisualization(&VisualizationConfig{
+			CanvasWidth:      400,
+			CanvasHeight:     200,
+			BackgroundColor:  "#2a2a2a",
+			UpdateIntervalMs: 100,
+			Renderers: []RendererConfig{
+				{
+					Type:          "text",
+					PartitionName: "counter_state",
+					Properties: map[string]interface{}{
+						"fontSize": 24,
+						"color":    "#ffffff",
+						"x":        200,
+						"y":        100,
+						"text":     "Count: {value}",
 					},
 				},
 			},
-			ImplementationConfig: &ImplementationConfig{
-				Iterations: map[string]simulator.Iteration{
-					"counter_state": &MinimalCounterIteration{},
-				},
-				OutputCondition: &simulator.EveryStepOutputCondition{},
-				OutputFunction:  &simulator.StdoutOutputFunction{},
-				TerminationCondition: &simulator.TimeElapsedTerminationCondition{
-					MaxTimeElapsed: 30.0, // 30 seconds
-				},
-				TimestepFunction: &simulator.ConstantTimestepFunction{
-					Stepsize: 1.0, // 1 second per step
-				},
-			},
-			Parameters: map[string]interface{}{
-				"initial_value": 0,
-				"increment":     1,
-			},
-		},
-	}
+		}).
+		Build()
+
+	return &MinimalExampleGame{config: config}
 }
 
 // GetName returns the game name

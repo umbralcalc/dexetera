@@ -155,14 +155,54 @@ func (g *MyGame) GetName() string {
     return "my_game"
 }
 
-func (g *MyGame) GetConfigGenerator() *simulator.ConfigGenerator {
-    // Create a new ConfigGenerator
-    configGen := simulator.NewConfigGenerator()
+// Using the GameBuilder pattern for complex games
+func NewMyGame() *MyGame {
+    config := NewGameBuilder("my_game").
+        WithDescription("A more complex game example").
+        WithPartition("game", "game_state", &MyGameIteration{}).
+        WithServerPartition("game_state").
+        WithParameter("game_init", []float64{0.0}).
+        WithParameter("game_params", map[string][]float64{"speed": {2.0}}).
+        WithMaxTime(60.0).
+        WithTimestep(1.0).
+        WithVisualization(&VisualizationConfig{
+            CanvasWidth:      600,
+            CanvasHeight:     400,
+            BackgroundColor:  "#1a1a1a",
+            UpdateIntervalMs: 50,
+            Renderers: []RendererConfig{
+                {
+                    Type:          "text",
+                    PartitionName: "game_state",
+                    Properties: map[string]interface{}{
+                        "fontSize": 20,
+                        "color":    "#00ffff",
+                        "x":        300,
+                        "y":        200,
+                        "text":     "Game State: {value}",
+                    },
+                },
+                {
+                    Type:          "circle",
+                    PartitionName: "game_state",
+                    Properties: map[string]interface{}{
+                        "color":  "#00ffff",
+                        "x":      300,
+                        "y":      300,
+                        "radius": 30,
+                    },
+                },
+            },
+        }).
+        Build()
     
-    // Set global seed
+    return &MyGame{config: config}
+}
+
+func (g *MyGame) GetConfigGenerator() *simulator.ConfigGenerator {
+    configGen := simulator.NewConfigGenerator()
     configGen.SetGlobalSeed(42)
     
-    // Configure the game partition
     gamePartition := &simulator.PartitionConfig{
         Name: "game_state",
         Params: simulator.NewParams(map[string][]float64{
@@ -172,33 +212,12 @@ func (g *MyGame) GetConfigGenerator() *simulator.ConfigGenerator {
     }
     configGen.SetPartition(gamePartition)
     
-    // Configure simulation-level settings
     simulationConfig := &simulator.SimulationConfig{
         InitTimeValue: 0.0,
     }
     configGen.SetSimulation(simulationConfig)
     
     return configGen
-}
-
-func (g *MyGame) GetConfig() *GameConfig {
-    return &GameConfig{
-        Name: "my_game",
-        Description: "A more complex game example",
-        ImplementationConfig: &ImplementationConfig{
-            Iterations: map[string]simulator.Iteration{
-                "game_state": &MyGameIteration{},
-            },
-            OutputCondition: &simulator.EveryStepOutputCondition{},
-            OutputFunction: &simulator.StdoutOutputFunction{},
-            TerminationCondition: &simulator.TimeElapsedTerminationCondition{
-                MaxTimeElapsed: 60.0,
-            },
-            TimestepFunction: &simulator.ConstantTimestepFunction{
-                Stepsize: 1.0,
-            },
-        },
-    }
 }</pre>
             </div>
         </div>
