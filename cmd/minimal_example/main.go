@@ -17,10 +17,13 @@ func main() {
 	game := games.NewMinimalExampleGame()
 	js.Global().Get("console").Call("log", "Game created")
 
-	// Get the config generator and generate settings and implementations
+	// Get the config generator and generate settings
 	configGen := game.GetConfigGenerator()
-	settings, implementations := configGen.GenerateConfigs()
-	js.Global().Get("console").Call("log", "Settings and implementations generated from ConfigGenerator")
+	settings, _ := configGen.GenerateConfigs() // We'll use our own implementations
+
+	// Get implementations from our game configuration
+	implementations := game.GetConfig().ImplementationConfig.ToImplementations()
+	js.Global().Get("console").Call("log", "Settings and implementations generated")
 
 	// Register the simulation step function
 	// Note: websocketPartitionIndex is 0 since we only have one partition

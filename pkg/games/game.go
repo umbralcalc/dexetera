@@ -45,6 +45,9 @@ type GameConfig struct {
 	// VisualizationConfig holds game-specific visualization settings
 	VisualizationConfig *VisualizationConfig
 
+	// ImplementationConfig holds simulation implementation settings
+	ImplementationConfig *ImplementationConfig
+
 	// Game-specific parameters
 	Parameters map[string]interface{}
 }
@@ -78,6 +81,24 @@ type RendererConfig struct {
 	Properties map[string]interface{}
 }
 
+// ImplementationConfig holds configuration for simulation implementations
+type ImplementationConfig struct {
+	// Iterations defines the iteration implementations for each partition
+	Iterations map[string]simulator.Iteration
+
+	// OutputCondition defines when to output simulation state
+	OutputCondition simulator.OutputCondition
+
+	// OutputFunction defines how to output simulation state
+	OutputFunction simulator.OutputFunction
+
+	// TerminationCondition defines when the simulation should end
+	TerminationCondition simulator.TerminationCondition
+
+	// TimestepFunction defines how to compute time increments
+	TimestepFunction simulator.TimestepFunction
+}
+
 // GameRenderer defines how a game should be visualized in the browser.
 // This interface allows Go code to specify visualization details that get
 // converted to JavaScript configuration.
@@ -90,4 +111,54 @@ type GameRenderer interface {
 
 	// GetCSSCode returns any custom CSS code needed for styling
 	GetCSSCode() string
+}
+
+// Helper functions for creating common implementation configurations
+
+// NewDefaultImplementationConfig creates a default implementation configuration
+// suitable for most games
+func NewDefaultImplementationConfig() *ImplementationConfig {
+	return &ImplementationConfig{
+		OutputCondition: &simulator.EveryStepOutputCondition{},
+		OutputFunction:  &simulator.StdoutOutputFunction{},
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+			MaxTimeElapsed: 30.0, // 30 seconds default
+		},
+		TimestepFunction: &simulator.ConstantTimestepFunction{
+			Stepsize: 1.0, // 1 second per step default
+		},
+		Iterations: make(map[string]simulator.Iteration),
+	}
+}
+
+// NewWebSocketImplementationConfig creates an implementation configuration
+// optimized for WebSocket-based games
+func NewWebSocketImplementationConfig() *ImplementationConfig {
+	return &ImplementationConfig{
+		OutputCondition: &simulator.EveryStepOutputCondition{},
+		OutputFunction:  &simulator.StdoutOutputFunction{}, // Will be replaced with JsCallbackOutputFunction
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+			MaxTimeElapsed: 60.0, // 60 seconds for WebSocket games
+		},
+		TimestepFunction: &simulator.ConstantTimestepFunction{
+			Stepsize: 1.0, // 1 second per step
+		},
+		Iterations: make(map[string]simulator.Iteration),
+	}
+}
+
+// ToImplementations converts an ImplementationConfig to a simulator.Implementations
+func (ic *ImplementationConfig) ToImplementations() *simulator.Implementations {
+	iterations := make([]simulator.Iteration, 0, len(ic.Iterations))
+	for _, iteration := range ic.Iterations {
+		iterations = append(iterations, iteration)
+	}
+
+	return &simulator.Implementations{
+		Iterations:           iterations,
+		OutputCondition:      ic.OutputCondition,
+		OutputFunction:       ic.OutputFunction,
+		TerminationCondition: ic.TerminationCondition,
+		TimestepFunction:     ic.TimestepFunction,
+	}
 }

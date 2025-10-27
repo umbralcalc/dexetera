@@ -39,6 +39,19 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 					},
 				},
 			},
+			ImplementationConfig: &ImplementationConfig{
+				Iterations: map[string]simulator.Iteration{
+					"counter_state": &MinimalCounterIteration{},
+				},
+				OutputCondition: &simulator.EveryStepOutputCondition{},
+				OutputFunction:  &simulator.StdoutOutputFunction{},
+				TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+					MaxTimeElapsed: 30.0, // 30 seconds
+				},
+				TimestepFunction: &simulator.ConstantTimestepFunction{
+					Stepsize: 1.0, // 1 second per step
+				},
+			},
 			Parameters: map[string]interface{}{
 				"initial_value": 0,
 				"increment":     1,

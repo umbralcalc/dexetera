@@ -12,7 +12,7 @@ Each of these games is meant to be a purely-frontend web application built by co
 
 The `pkg/simio` package has been updated to the latest version of the stochadex framework and this supports a JS callback function being passed into it in the `app/` code.
 
-The games writtten using the stochadex framework can be found in the `pkg/games` package.
+The games writtten using the stochadex framework can be found in the `pkg/games` package. For documentation on how to use the stochadex framework there are the package pages here: https://umbralcalc.github.io/stochadex/pkg/simulator.html.
 
 ## What I'd like you to help me with
 
@@ -21,5 +21,3 @@ I'm in the middle of refactoring the code in this repo to make it more maintaina
 I want the Go programmer to be able to specify a lot of how this JS frontend looks for these decision-making games by generating the visualisations with Go code if possible, while doing this in a way which is maintainable and works well with the abstractions already provided by the stochadex package (at the very least the ones exposed in the State protocol buffer layer, but ideally even more at the `simulator.Iteration` and `simulator.OutputFunction` level too).
 
 I don't want the stochadex framework to have to change, so all of the proposed changes here should be extensions written in this repo ideally, but I'm willing to consider feature extensions to the stochadex if you think it's really important.
-
-A good first step should be to update the pkg/games/game.go and pkg/games/minimal_example.go to use the simulator.ConfigGenerator to build the simulation configs step-by-step and then you can generate the implementation and settings configs needed in cmd/minimal_example/main.go using .GenerateConfigs()

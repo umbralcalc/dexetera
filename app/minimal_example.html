@@ -130,7 +130,7 @@ type MinimalExampleGame struct {
     config *GameConfig
 }
 
-// 2. Implement the Game interface
+// 2. Implement the Game interface with enhanced ConfigGenerator integration
 func (g *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
     // Create a new ConfigGenerator
     configGen := simulator.NewConfigGenerator()
@@ -155,6 +155,27 @@ func (g *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
     configGen.SetSimulation(simulationConfig)
     
     return configGen
+}
+
+// 3. Configure implementations through GameConfig
+func (g *MinimalExampleGame) GetConfig() *GameConfig {
+    return &GameConfig{
+        Name: "minimal_example",
+        Description: "The simplest possible game - just a counter",
+        ImplementationConfig: &ImplementationConfig{
+            Iterations: map[string]simulator.Iteration{
+                "counter_state": &MinimalCounterIteration{},
+            },
+            OutputCondition: &simulator.EveryStepOutputCondition{},
+            OutputFunction: &simulator.StdoutOutputFunction{},
+            TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+                MaxTimeElapsed: 30.0,
+            },
+            TimestepFunction: &simulator.ConstantTimestepFunction{
+                Stepsize: 1.0,
+            },
+        },
+    }
 }
 
 // 3. Implement the counter logic

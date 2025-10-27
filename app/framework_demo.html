@@ -179,6 +179,26 @@ func (g *MyGame) GetConfigGenerator() *simulator.ConfigGenerator {
     configGen.SetSimulation(simulationConfig)
     
     return configGen
+}
+
+func (g *MyGame) GetConfig() *GameConfig {
+    return &GameConfig{
+        Name: "my_game",
+        Description: "A more complex game example",
+        ImplementationConfig: &ImplementationConfig{
+            Iterations: map[string]simulator.Iteration{
+                "game_state": &MyGameIteration{},
+            },
+            OutputCondition: &simulator.EveryStepOutputCondition{},
+            OutputFunction: &simulator.StdoutOutputFunction{},
+            TerminationCondition: &simulator.TimeElapsedTerminationCondition{
+                MaxTimeElapsed: 60.0,
+            },
+            TimestepFunction: &simulator.ConstantTimestepFunction{
+                Stepsize: 1.0,
+            },
+        },
+    }
 }</pre>
             </div>
         </div>
