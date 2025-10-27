@@ -16,11 +16,9 @@ type Game interface {
 	// GetConfig returns the game-specific configuration
 	GetConfig() *GameConfig
 
-	// GetSettings returns the stochadex simulator settings for this game
-	GetSettings() *simulator.Settings
-
-	// GetImplementations returns the stochadex implementations for this game
-	GetImplementations() *simulator.Implementations
+	// GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
+	// configuration step-by-step using the fluent API
+	GetConfigGenerator() *simulator.ConfigGenerator
 
 	// GetRenderer returns the visualization renderer for this game
 	GetRenderer() GameRenderer

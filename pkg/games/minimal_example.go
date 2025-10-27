@@ -62,44 +62,33 @@ func (m *MinimalExampleGame) GetConfig() *GameConfig {
 	return m.config
 }
 
-// GetSettings returns the stochadex settings for this game
-func (m *MinimalExampleGame) GetSettings() *simulator.Settings {
+// GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
+// configuration step-by-step using the fluent API
+func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
 	initialValue := m.config.Parameters["initial_value"].(int)
 	increment := m.config.Parameters["increment"].(int)
 
-	settings := &simulator.Settings{
-		Iterations: []simulator.IterationSettings{
-			{
-				Name:              "counter_state",
-				Params:            simulator.NewParams(map[string][]float64{"increment": {float64(increment)}}),
-				InitStateValues:   []float64{float64(initialValue)},
-				Seed:              42,
-				StateWidth:        1,
-				StateHistoryDepth: 1,
-			},
-		},
-		InitTimeValue:         0.0,
-		TimestepsHistoryDepth: 1,
-	}
+	// Create a new ConfigGenerator
+	configGen := simulator.NewConfigGenerator()
 
-	return settings
-}
+	// Set global seed
+	configGen.SetGlobalSeed(42)
 
-// GetImplementations returns the stochadex implementations
-func (m *MinimalExampleGame) GetImplementations() *simulator.Implementations {
-	return &simulator.Implementations{
-		Iterations: []simulator.Iteration{
-			&MinimalCounterIteration{},
-		},
-		OutputCondition: &simulator.EveryStepOutputCondition{},
-		OutputFunction:  &simulator.StdoutOutputFunction{},
-		TerminationCondition: &simulator.TimeElapsedTerminationCondition{
-			MaxTimeElapsed: 30.0, // 30 seconds
-		},
-		TimestepFunction: &simulator.ConstantTimestepFunction{
-			Stepsize: 1.0, // 1 second per step
-		},
+	// Configure the counter partition
+	counterPartition := &simulator.PartitionConfig{
+		Name:            "counter_state",
+		Params:          simulator.NewParams(map[string][]float64{"increment": {float64(increment)}}),
+		InitStateValues: []float64{float64(initialValue)},
 	}
+	configGen.SetPartition(counterPartition)
+
+	// Configure simulation-level settings
+	simulationConfig := &simulator.SimulationConfig{
+		InitTimeValue: 0.0,
+	}
+	configGen.SetSimulation(simulationConfig)
+
+	return configGen
 }
 
 // GetRenderer returns the visualization renderer
