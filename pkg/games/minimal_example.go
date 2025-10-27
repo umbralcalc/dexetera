@@ -56,8 +56,23 @@ func (m *MinimalExampleGame) GetConfig() *GameConfig {
 // GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
 // configuration step-by-step using the fluent API
 func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
-	initialValue := m.config.Parameters["initial_value"].(int)
-	increment := m.config.Parameters["increment"].(int)
+	// Get initial value from counter_init parameter
+	var initialValue float64 = 0.0
+	if initParam, exists := m.config.Parameters["counter_init"]; exists {
+		if initValues, ok := initParam.([]float64); ok && len(initValues) > 0 {
+			initialValue = initValues[0]
+		}
+	}
+
+	// Get increment from counter_params parameter
+	var increment float64 = 1.0
+	if paramsParam, exists := m.config.Parameters["counter_params"]; exists {
+		if params, ok := paramsParam.(map[string][]float64); ok {
+			if incrementValues, exists := params["increment"]; exists && len(incrementValues) > 0 {
+				increment = incrementValues[0]
+			}
+		}
+	}
 
 	// Create a new ConfigGenerator
 	configGen := simulator.NewConfigGenerator()
@@ -68,8 +83,8 @@ func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
 	// Configure the counter partition
 	counterPartition := &simulator.PartitionConfig{
 		Name:            "counter_state",
-		Params:          simulator.NewParams(map[string][]float64{"increment": {float64(increment)}}),
-		InitStateValues: []float64{float64(initialValue)},
+		Params:          simulator.NewParams(map[string][]float64{"increment": {increment}}),
+		InitStateValues: []float64{initialValue},
 	}
 	configGen.SetPartition(counterPartition)
 

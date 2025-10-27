@@ -10,23 +10,18 @@ import (
 )
 
 func main() {
-	// Add debugging
 	js.Global().Get("console").Call("log", "Minimal example main function called")
 
-	// Create the minimal example game
 	game := games.NewMinimalExampleGame()
-	js.Global().Get("console").Call("log", "Game created")
+	js.Global().Get("console").Call("log", "MinimalExampleGame created")
 
-	// Get the config generator and generate settings
 	configGen := game.GetConfigGenerator()
-	settings, _ := configGen.GenerateConfigs() // We'll use our own implementations
+	settings, _ := configGen.GenerateConfigs()
 
-	// Get implementations from our game configuration
 	implementations := game.GetConfig().ImplementationConfig.ToImplementations()
 	js.Global().Get("console").Call("log", "Settings and implementations generated")
 
-	// Register the simulation step function
-	// Note: websocketPartitionIndex is 0 since we only have one partition
+	// Note: websocketPartitionIndex is 0 since counter_state is the first partition
 	js.Global().Get("console").Call("log", "Calling RegisterStep")
 	simio.RegisterStep(settings, implementations, 0, "", ":2112")
 }

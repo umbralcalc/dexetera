@@ -76,12 +76,7 @@ func (gtg *GameTemplateGenerator) generateHTML(outputDir string) error {
                 <canvas id="gameCanvas" width="{{.CanvasWidth}}" height="{{.CanvasHeight}}"></canvas>
             </div>
             
-            <div class="status" id="status">Waiting for server to start simulation...</div>
-            
-            <div class="controls">
-                <button id="startBtn" onclick="startSimulation()">Start Simulation</button>
-                <button id="stopBtn" onclick="stopSimulation()" disabled>Stop Simulation</button>
-            </div>
+            <div class="status" id="status">Waiting for Python server to connect...</div>
         </div>
         
         <div class="info">
@@ -104,7 +99,6 @@ func (gtg *GameTemplateGenerator) generateHTML(outputDir string) error {
     <script src="wasm_exec.js"></script>
     <script src="google-protobuf.js"></script>
     <script src="partition_state_pb.js"></script>
-    <script src="worker.js"></script>
     <script src="game.js"></script>
 </body>
 </html>`
@@ -207,50 +201,6 @@ h1 {
     min-width: 300px;
 }
 
-.controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-button {
-    padding: 12px 24px;
-    font-size: 1em;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
-}
-
-#startBtn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-}
-
-#startBtn:hover:not(:disabled) {
-    background: linear-gradient(45deg, #45a049, #4CAF50);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-#stopBtn {
-    background: linear-gradient(45deg, #f44336, #da190b);
-    color: white;
-}
-
-#stopBtn:hover:not(:disabled) {
-    background: linear-gradient(45deg, #da190b, #f44336);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
 .info {
     margin-top: 30px;
     padding: 20px;
@@ -314,15 +264,6 @@ button:disabled {
         max-width: 100%;
         height: auto;
     }
-    
-    .controls {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    button {
-        width: 200px;
-    }
 }`
 
 	tmpl, err := template.New("css").Parse(cssTemplate)
@@ -384,12 +325,11 @@ const gameConfig = {
 // Global variables
 let gameRenderer = null;
 let worker = null;
-let isRunning = false;
 
 // Initialize the game
 function initializeGame() {
     const canvas = document.getElementById('gameCanvas');
-    gameRenderer = new GameRenderer(canvas, gameConfig.visualization);
+    gameRenderer = new GenericRenderer(canvas, gameConfig.visualization);
     
     // Set up worker for WebAssembly
     worker = new Worker('worker.js');
@@ -402,7 +342,7 @@ function initializeGame() {
             // Update status to show we're receiving data
             const partitionName = data.partitionName;
             const value = Math.floor(data.state.values[0] || 0);
-            document.getElementById('status').textContent = ` + "`${partitionName}: ${value} (Server-controlled)`" + `;
+            document.getElementById('status').textContent = ` + "`${partitionName}: ${value} (Python-controlled)`" + `;
         } else if (type === 'error') {
             console.error('Worker error:', data);
             document.getElementById('status').textContent = 'Error: ' + data;
@@ -416,6 +356,16 @@ function initializeGame() {
     
     // Hide loading overlay
     document.getElementById('overlay').style.display = 'none';
+    document.getElementById('status').textContent = 'Ready - waiting for Python server...';
+    
+    // Start the WebAssembly module
+    worker.postMessage({ 
+        action: 'start', 
+        wasmBinary: 'src/main.wasm',
+        serverPartitionNames: gameConfig.serverPartitionNames,
+        stopAtSimTime: 30.05,
+        debugMode: false
+    });
 }
 
 // Update visualization with new data
@@ -424,36 +374,6 @@ function updateVisualization(partitionState) {
         gameRenderer.update(partitionState);
         gameRenderer.render();
     }
-}
-
-// Start simulation
-function startSimulation() {
-    if (!worker) {
-        console.error('Worker not initialized');
-        return;
-    }
-    
-    worker.postMessage({ type: 'start' });
-    isRunning = true;
-    
-    document.getElementById('startBtn').disabled = true;
-    document.getElementById('stopBtn').disabled = false;
-    document.getElementById('status').textContent = 'Simulation running...';
-}
-
-// Stop simulation
-function stopSimulation() {
-    if (!worker) {
-        console.error('Worker not initialized');
-        return;
-    }
-    
-    worker.postMessage({ type: 'stop' });
-    isRunning = false;
-    
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('stopBtn').disabled = true;
-    document.getElementById('status').textContent = 'Simulation stopped';
 }
 
 // Initialize when page loads
