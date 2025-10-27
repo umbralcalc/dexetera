@@ -27,10 +27,6 @@ func main() {
 	switch *gameType {
 	case "minimal_example":
 		game = games.NewMinimalExampleGame()
-	case "builder_example":
-		game = games.NewBuilderExampleGame()
-	case "visualization_example":
-		game = games.NewVisualizationExampleGame()
 	default:
 		fmt.Printf("❌ Unknown game type: %s\n", *gameType)
 		fmt.Println("Available games:")
