@@ -322,165 +322,16 @@ const gameConfig = {
     }
 };
 
-// Binding resolver: supports { bind: { type: 'state'|'param', partition: 'name', index: 0, key?: 'paramKey' } }
-const stateCache = {}; // partitionName -> values array
-const paramCache = {}; // partitionName -> { key -> [] }
-
-function resolveBinding(val) {
-    if (!val || typeof val !== 'object') return val;
-    const b = val.bind;
-    if (!b || typeof b !== 'object') return val;
-    // state binding
-    if (b.type === 'state') {
-        const part = b.partition;
-        const idx = b.index || 0;
-        const arr = stateCache[part];
-        if (arr && typeof arr[idx] === 'number') return arr[idx];
-        return 0;
-    }
-    // param binding: lookup from paramCache if available
-    if (b.type === 'param') {
-        const part = b.partition;
-        const key = b.key || 'param_values';
-        const idx = b.index || 0;
-        const obj = paramCache[part];
-        if (obj && Array.isArray(obj[key]) && typeof obj[key][idx] === 'number') return obj[key][idx];
-        // Fallback: if iteration mirrors param_values into state, reuse state
-        const arr = stateCache[part];
-        if (arr && typeof arr[idx] === 'number') return arr[idx];
-        return 0;
-    }
-    return val;
-}
-
-function prop(renderer, name, fallback) {
-    const v = renderer.properties ? renderer.properties[name] : undefined;
-    const r = resolveBinding(v);
-    return r === undefined ? fallback : r;
-}
-
-// Generic renderer with binding-aware properties
-class GenericRenderer {
-    constructor(canvas, config) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        this.config = config;
-        this.state = {};
-    }
-    
-    update(partitionState) {
-        // cache raw array for binding resolver
-        stateCache[partitionState.partitionName] = partitionState.state.values;
-        this.state[partitionState.partitionName] = partitionState.state.values;
-    }
-    
-    render() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Render each configured renderer
-        this.config.renderers.forEach(renderer => {
-            this.renderElement(renderer);
-        });
-    }
-    
-    renderElement(renderer) {
-        const state = this.state[renderer.partitionName];
-        if (!state) return;
-        
-        switch (renderer.type) {
-            case 'text':
-                this.renderText(renderer, state);
-                break;
-            case 'circle':
-                this.renderCircle(renderer, state);
-                break;
-            case 'rectangle':
-                this.renderRectangle(renderer, state);
-                break;
-        }
-    }
-    
-    renderText(renderer, state) {
-        this.ctx.fillStyle = prop(renderer, 'color', '#ffffff');
-        const fontSize = prop(renderer, 'fontSize', 16);
-        const fontFamily = prop(renderer, 'fontFamily', 'Arial');
-        this.ctx.font = String(fontSize) + 'px ' + String(fontFamily);
-        this.ctx.textAlign = prop(renderer, 'textAlign', 'center');
-        
-        let text = prop(renderer, 'text', '{value}');
-        if (typeof text === 'string') {
-            const v = Math.floor(state[0] || 0);
-            text = text.replace('{value}', v);
-        }
-        
-        this.ctx.fillText(
-            text,
-            prop(renderer, 'x', this.canvas.width / 2),
-            prop(renderer, 'y', this.canvas.height / 2),
-        );
-    }
-    
-    renderCircle(renderer, state) {
-        const x = prop(renderer, 'x', this.canvas.width / 2);
-        const y = prop(renderer, 'y', this.canvas.height / 2);
-        const radius = prop(renderer, 'radius', 10);
-        
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        
-        const fillColor = prop(renderer, 'fillColor', null);
-        const strokeColor = prop(renderer, 'strokeColor', null);
-        const strokeWidth = prop(renderer, 'strokeWidth', 1);
-        
-        if (fillColor) {
-            this.ctx.fillStyle = fillColor;
-            this.ctx.fill();
-        }
-        if (strokeColor) {
-            this.ctx.strokeStyle = strokeColor;
-            this.ctx.lineWidth = strokeWidth;
-            this.ctx.stroke();
-        }
-        if (!fillColor && !strokeColor) {
-            this.ctx.fillStyle = prop(renderer, 'color', '#ffffff');
-            this.ctx.fill();
-        }
-    }
-    
-    renderRectangle(renderer, state) {
-        const x = prop(renderer, 'x', 0);
-        const y = prop(renderer, 'y', 0);
-        const width = prop(renderer, 'width', 50);
-        const height = prop(renderer, 'height', 50);
-        
-        const fillColor = prop(renderer, 'fillColor', null);
-        const strokeColor = prop(renderer, 'strokeColor', null);
-        const strokeWidth = prop(renderer, 'strokeWidth', 1);
-        
-        if (fillColor) {
-            this.ctx.fillStyle = fillColor;
-            this.ctx.fillRect(x, y, width, height);
-        }
-        if (strokeColor) {
-            this.ctx.strokeStyle = strokeColor;
-            this.ctx.lineWidth = strokeWidth;
-            this.ctx.strokeRect(x, y, width, height);
-        }
-        if (!fillColor && !strokeColor) {
-            this.ctx.fillStyle = prop(renderer, 'color', '#ffffff');
-            this.ctx.fillRect(x, y, width, height);
-        }
-    }
-}
-
 // Global variables
-let gameRenderer = null;
 let worker = null;
 
 // Initialize the game
 function initializeGame() {
     const canvas = document.getElementById('gameCanvas');
-    gameRenderer = new GenericRenderer(canvas, gameConfig.visualization);
+    // Defer renderer creation to renderer-provided code
+    if (typeof initializeRenderer === 'function') {
+        initializeRenderer(canvas, gameConfig.visualization);
+    }
     
     // Set up worker for WebAssembly
     worker = new Worker('worker.js');
@@ -489,11 +340,13 @@ function initializeGame() {
         const { type, data } = e.data;
         
         if (type === 'partitionState') {
-            updateVisualization(data);
+            if (typeof updateVisualization === 'function') {
+                updateVisualization(data);
+            }
             // Update status to show we're receiving data
             const partitionName = data.partitionName;
             const value = Math.floor(data.state.values[0] || 0);
-            document.getElementById('status').textContent = ` + "`${partitionName}: ${value} (Python-controlled)`" + `;
+            document.getElementById('status').textContent = partitionName + ': ' + value + ' (Python-controlled)';
         } else if (type === 'error') {
             console.error('Worker error:', data);
             document.getElementById('status').textContent = 'Error: ' + data;
@@ -517,14 +370,6 @@ function initializeGame() {
         stopAtSimTime: 30.05,
         debugMode: false
     });
-}
-
-// Update visualization with new data
-function updateVisualization(partitionState) {
-    if (gameRenderer) {
-        gameRenderer.update(partitionState);
-        gameRenderer.render();
-    }
 }
 
 // Initialize when page loads
