@@ -16,10 +16,6 @@ type Game interface {
 	// GetConfig returns the game-specific configuration
 	GetConfig() *GameConfig
 
-	// GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
-	// configuration step-by-step using the fluent API
-	GetConfigGenerator() *simulator.ConfigGenerator
-
 	// GetRenderer returns the visualization renderer for this game
 	GetRenderer() GameRenderer
 }
@@ -47,6 +43,11 @@ type GameConfig struct {
 
 	// ImplementationConfig holds simulation implementation settings
 	ImplementationConfig *ImplementationConfig
+
+	// SimulationGenerator builds a simulator.ConfigGenerator independently
+	// of the game builder; the framework will call this and wire output
+	// callback and output condition.
+	SimulationGenerator func() *simulator.ConfigGenerator
 
 	// Game-specific parameters
 	Parameters map[string]interface{}
@@ -478,6 +479,12 @@ func (gb *GameBuilder) WithVisualization(config *VisualizationConfig) *GameBuild
 	return gb
 }
 
+// WithSimulation sets the simulation generator used to produce simulator configs
+func (gb *GameBuilder) WithSimulation(simGen func() *simulator.ConfigGenerator) *GameBuilder {
+	gb.config.SimulationGenerator = simGen
+	return gb
+}
+
 // WithOutputCondition sets the output condition
 func (gb *GameBuilder) WithOutputCondition(condition simulator.OutputCondition) *GameBuilder {
 	gb.config.ImplementationConfig.OutputCondition = condition
@@ -546,53 +553,6 @@ func (g *GenericGame) GetDescription() string {
 // GetConfig returns the game configuration
 func (g *GenericGame) GetConfig() *GameConfig {
 	return g.config
-}
-
-// GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
-// configuration step-by-step using the fluent API
-func (g *GenericGame) GetConfigGenerator() *simulator.ConfigGenerator {
-	configGen := simulator.NewConfigGenerator()
-	configGen.SetGlobalSeed(42) // Default seed, can be made configurable
-
-	// Add partitions from the game configuration
-	for logicalName, partitionName := range g.config.PartitionNames {
-		// Get parameters for this partition
-		var params map[string][]float64
-		if paramValue, exists := g.config.Parameters[logicalName+"_params"]; exists {
-			if paramMap, ok := paramValue.(map[string][]float64); ok {
-				params = paramMap
-			}
-		}
-		if params == nil {
-			params = make(map[string][]float64)
-		}
-
-		// Get initial state values
-		var initValues []float64
-		if initValue, exists := g.config.Parameters[logicalName+"_init"]; exists {
-			if values, ok := initValue.([]float64); ok {
-				initValues = values
-			}
-		}
-		if initValues == nil {
-			initValues = []float64{0.0} // Default initial value
-		}
-
-		partition := &simulator.PartitionConfig{
-			Name:            partitionName,
-			Params:          simulator.NewParams(params),
-			InitStateValues: initValues,
-		}
-		configGen.SetPartition(partition)
-	}
-
-	// Configure simulation-level settings
-	simulationConfig := &simulator.SimulationConfig{
-		InitTimeValue: 0.0, // Default, can be made configurable
-	}
-	configGen.SetSimulation(simulationConfig)
-
-	return configGen
 }
 
 // GetRenderer returns the visualization renderer
@@ -746,9 +706,9 @@ class GenericRenderer {
     }
     
     renderText(renderer, state) {
-        this.ctx.fillStyle = renderer.properties.color || '#ffffff';
-        this.ctx.font = (renderer.properties.fontSize || 16) + 'px ' + (renderer.properties.fontFamily || 'Arial');
-        this.ctx.textAlign = renderer.properties.textAlign || 'center';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '16px Arial';
+        this.ctx.textAlign = 'center';
         
         let text = renderer.properties.text || '{value}';
         text = text.replace('{value}', Math.floor(state[0] || 0));
@@ -803,95 +763,6 @@ class GenericRenderer {
         if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
             this.ctx.fillStyle = renderer.properties.color || '#ffffff';
             this.ctx.fillRect(x, y, width, height);
-        }
-    }
-    
-    renderLine(renderer, state) {
-        this.ctx.strokeStyle = renderer.properties.color || '#ffffff';
-        this.ctx.lineWidth = renderer.properties.width || 1;
-        
-        if (renderer.properties.dashPattern) {
-            this.ctx.setLineDash(renderer.properties.dashPattern);
-        }
-        
-        this.ctx.beginPath();
-        this.ctx.moveTo(renderer.properties.x1 || 0, renderer.properties.y1 || 0);
-        this.ctx.lineTo(renderer.properties.x2 || 100, renderer.properties.y2 || 100);
-        this.ctx.stroke();
-        
-        this.ctx.setLineDash([]); // Reset dash pattern
-    }
-    
-    renderBarChart(renderer, state) {
-        const x = renderer.properties.x || 0;
-        const y = renderer.properties.y || 0;
-        const width = renderer.properties.width || 200;
-        const height = renderer.properties.height || 100;
-        const maxValue = renderer.properties.maxValue || 100;
-        const value = Math.min(state[0] || 0, maxValue);
-        
-        // Draw background
-        this.ctx.fillStyle = '#333333';
-        this.ctx.fillRect(x, y, width, height);
-        
-        // Draw bar
-        const barHeight = (value / maxValue) * height;
-        this.ctx.fillStyle = renderer.properties.color || '#00ff00';
-        this.ctx.fillRect(x, y + height - barHeight, width, barHeight);
-        
-        // Draw labels
-        if (renderer.properties.showLabels) {
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-            const labelFormat = renderer.properties.labelFormat || '{value}';
-            const label = labelFormat.replace('{value}', Math.floor(value));
-            this.ctx.fillText(label, x + width / 2, y + height + 15);
-        }
-    }
-    
-    renderLineChart(renderer, state) {
-        const x = renderer.properties.x || 0;
-        const y = renderer.properties.y || 0;
-        const width = renderer.properties.width || 200;
-        const height = renderer.properties.height || 100;
-        const maxValue = renderer.properties.maxValue || 100;
-        const lineWidth = renderer.properties.lineWidth || 2;
-        
-        const history = this.history[renderer.partitionName] || [];
-        if (history.length < 2) return;
-        
-        // Draw background
-        this.ctx.fillStyle = '#333333';
-        this.ctx.fillRect(x, y, width, height);
-        
-        // Draw line
-        this.ctx.strokeStyle = renderer.properties.color || '#00ff00';
-        this.ctx.lineWidth = lineWidth;
-        this.ctx.beginPath();
-        
-        history.forEach((point, index) => {
-            const pointX = x + (index / (history.length - 1)) * width;
-            const pointY = y + height - (Math.min(point.value, maxValue) / maxValue) * height;
-            
-            if (index === 0) {
-                this.ctx.moveTo(pointX, pointY);
-            } else {
-                this.ctx.lineTo(pointX, pointY);
-            }
-        });
-        
-        this.ctx.stroke();
-        
-        // Draw labels
-        if (renderer.properties.showLabels && history.length > 0) {
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'center';
-            const labelFormat = renderer.properties.labelFormat || '{value}';
-            const currentValue = history[history.length - 1].value;
-            const label = labelFormat.replace('{value}', Math.floor(currentValue));
-            this.ctx.fillText(label, x + width / 2, y + height + 15);
         }
     }
 }

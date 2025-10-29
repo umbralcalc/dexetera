@@ -32,9 +32,34 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 		WithMaxTime(30.0).
 		WithTimestep(1.0).
 		WithVisualization(visConfig).
+		// Provide a simulation generator that is independent of the builder
+		WithSimulation(BuildMinimalSimulation).
 		Build()
 
 	return &MinimalExampleGame{config: config}
+}
+
+// BuildMinimalSimulation produces the simulation config generator used by the framework
+func BuildMinimalSimulation() *simulator.ConfigGenerator {
+	gen := simulator.NewConfigGenerator()
+	gen.SetGlobalSeed(42)
+
+	counter := &simulator.PartitionConfig{
+		Name:            "counter_state",
+		Params:          simulator.NewParams(make(map[string][]float64)),
+		InitStateValues: []float64{0.0},
+	}
+	gen.SetPartition(counter)
+
+	sim := &simulator.SimulationConfig{
+		// Output callback wired by the framework (JS callback OutputFunction)
+		OutputCondition:      &simulator.EveryStepOutputCondition{},
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{MaxTimeElapsed: 31.0},
+		TimestepFunction:     &simulator.ConstantTimestepFunction{Stepsize: 1.0},
+		InitTimeValue:        0.0,
+	}
+	gen.SetSimulation(sim)
+	return gen
 }
 
 // GetName returns the game name
@@ -50,36 +75,6 @@ func (m *MinimalExampleGame) GetDescription() string {
 // GetConfig returns the game configuration
 func (m *MinimalExampleGame) GetConfig() *GameConfig {
 	return m.config
-}
-
-// GetConfigGenerator returns a configured ConfigGenerator that builds the simulation
-// configuration step-by-step using the fluent API
-func (m *MinimalExampleGame) GetConfigGenerator() *simulator.ConfigGenerator {
-	// Create a new ConfigGenerator
-	generator := simulator.NewConfigGenerator()
-
-	// Set global seed
-	generator.SetGlobalSeed(42)
-
-	// Configure the counter partition
-	counterPartition := &simulator.PartitionConfig{
-		Name:            "counter_state",
-		Params:          simulator.NewParams(make(map[string][]float64)),
-		InitStateValues: []float64{0.0},
-	}
-	generator.SetPartition(counterPartition)
-
-	// Configure simulation-level settings
-	simulationConfig := &simulator.SimulationConfig{
-		// OutputFunction is configured as the JS callback function
-		OutputCondition:      &simulator.EveryStepOutputCondition{},
-		TerminationCondition: &simulator.TimeElapsedTerminationCondition{MaxTimeElapsed: 31.0},
-		TimestepFunction:     &simulator.ConstantTimestepFunction{Stepsize: 1.0},
-		InitTimeValue:        0.0,
-	}
-	generator.SetSimulation(simulationConfig)
-
-	return generator
 }
 
 // GetRenderer returns the visualization renderer
