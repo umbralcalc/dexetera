@@ -45,13 +45,17 @@ func main() {
 		implementations.OutputCondition = makeOnlyNames(cfg.ServerPartitionNames)
 	}
 
-	// Resolve websocket partition index by name (fallback to 0)
-	websocketPartitionIndex := 0
-	if len(cfg.ServerPartitionNames) > 0 {
-		// TODO: derive by name from settings when API exposes names in settings ordering
+	// Resolve websocket partition indices by name
+	websocketPartitionIndices := make([]int, 0)
+	for _, name := range cfg.ActionStatePartitionNames {
+		for index, iteration := range settings.Iterations {
+			if iteration.Name == name {
+				websocketPartitionIndices = append(websocketPartitionIndices, index)
+			}
+		}
 	}
 
 	// Register the simulation step function
 	js.Global().Get("console").Call("log", "Calling RegisterStep")
-	simio.RegisterStep(settings, implementations, websocketPartitionIndex, "", ":2112")
+	simio.RegisterStep(settings, implementations, websocketPartitionIndices, "", ":2112")
 }

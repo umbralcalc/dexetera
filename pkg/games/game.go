@@ -38,6 +38,11 @@ type GameConfig struct {
 	// to the user's Python websocket server
 	ServerPartitionNames []string
 
+	// ActionStatePartitionNames are the partition names that should have
+	// action state values in their params set by the Python websocket
+	// server after each step
+	ActionStatePartitionNames []string
+
 	// VisualizationConfig holds game-specific visualization settings
 	VisualizationConfig *VisualizationConfig
 
@@ -454,16 +459,16 @@ func (gb *GameBuilder) WithDescription(description string) *GameBuilder {
 	return gb
 }
 
-// WithPartition adds a partition to the game
-func (gb *GameBuilder) WithPartition(logicalName, partitionName string, iteration simulator.Iteration) *GameBuilder {
-	gb.config.PartitionNames[logicalName] = partitionName
-	gb.config.ImplementationConfig.Iterations[partitionName] = iteration
-	return gb
-}
-
 // WithServerPartition adds a partition that should be sent to the Python websocket server
 func (gb *GameBuilder) WithServerPartition(partitionName string) *GameBuilder {
 	gb.config.ServerPartitionNames = append(gb.config.ServerPartitionNames, partitionName)
+	return gb
+}
+
+// WithActionStatePartition adds a partition that should have action state values in its params set by
+// the Python websocket server after each step
+func (gb *GameBuilder) WithActionStatePartition(partitionName string) *GameBuilder {
+	gb.config.ActionStatePartitionNames = append(gb.config.ActionStatePartitionNames, partitionName)
 	return gb
 }
 
@@ -482,46 +487,6 @@ func (gb *GameBuilder) WithVisualization(config *VisualizationConfig) *GameBuild
 // WithSimulation sets the simulation generator used to produce simulator configs
 func (gb *GameBuilder) WithSimulation(simGen func() *simulator.ConfigGenerator) *GameBuilder {
 	gb.config.SimulationGenerator = simGen
-	return gb
-}
-
-// WithOutputCondition sets the output condition
-func (gb *GameBuilder) WithOutputCondition(condition simulator.OutputCondition) *GameBuilder {
-	gb.config.ImplementationConfig.OutputCondition = condition
-	return gb
-}
-
-// WithOutputFunction sets the output function
-func (gb *GameBuilder) WithOutputFunction(function simulator.OutputFunction) *GameBuilder {
-	gb.config.ImplementationConfig.OutputFunction = function
-	return gb
-}
-
-// WithTerminationCondition sets the termination condition
-func (gb *GameBuilder) WithTerminationCondition(condition simulator.TerminationCondition) *GameBuilder {
-	gb.config.ImplementationConfig.TerminationCondition = condition
-	return gb
-}
-
-// WithTimestepFunction sets the timestep function
-func (gb *GameBuilder) WithTimestepFunction(function simulator.TimestepFunction) *GameBuilder {
-	gb.config.ImplementationConfig.TimestepFunction = function
-	return gb
-}
-
-// WithMaxTime sets the maximum simulation time
-func (gb *GameBuilder) WithMaxTime(maxTime float64) *GameBuilder {
-	gb.config.ImplementationConfig.TerminationCondition = &simulator.TimeElapsedTerminationCondition{
-		MaxTimeElapsed: maxTime,
-	}
-	return gb
-}
-
-// WithTimestep sets the timestep size
-func (gb *GameBuilder) WithTimestep(stepsize float64) *GameBuilder {
-	gb.config.ImplementationConfig.TimestepFunction = &simulator.ConstantTimestepFunction{
-		Stepsize: stepsize,
-	}
 	return gb
 }
 

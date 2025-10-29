@@ -49,7 +49,7 @@ func GenerateStepClosure(
 	wg *sync.WaitGroup,
 	callback *js.Value,
 	coordinator *simulator.PartitionCoordinator,
-	websocketPartitionIndex int,
+	websocketPartitionIndices []int,
 	handle string,
 	address string,
 ) func(this js.Value, args []js.Value) interface{} {
@@ -64,8 +64,10 @@ func GenerateStepClosure(
 			if err != nil {
 				panic(err)
 			}
-			coordinator.Iterators[websocketPartitionIndex].
-				Params.Set("param_values", actionState.Values)
+			for _, index := range websocketPartitionIndices {
+				coordinator.Iterators[index].
+					Params.Set("action_state_values", actionState.Values)
+			}
 		}
 		coordinator.Step(wg)
 		return nil
@@ -77,7 +79,7 @@ func GenerateStepClosure(
 func RegisterStep(
 	settings *simulator.Settings,
 	implementations *simulator.Implementations,
-	websocketPartitionIndex int,
+	websocketPartitionIndices []int,
 	handle string,
 	address string,
 ) {
@@ -101,7 +103,7 @@ func RegisterStep(
 		&wg,
 		&callback,
 		coordinator,
-		websocketPartitionIndex,
+		websocketPartitionIndices,
 		handle,
 		address,
 	)

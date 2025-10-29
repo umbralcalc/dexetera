@@ -146,12 +146,8 @@ func NewMinimalExampleGame() *MinimalExampleGame {
     // Create the game using GameBuilder
     config := NewGameBuilder("minimal_example").
         WithDescription("The simplest possible game - just a counter").
-        WithPartition("counter", "counter_state", &MinimalCounterIteration{}).
         WithServerPartition("counter_state").
-        WithParameter("counter_init", []float64{0.0}).
-        WithParameter("counter_params", map[string][]float64{"increment": {1.0}}).
-        WithMaxTime(30.0).
-        WithTimestep(1.0).
+        WithActionStatePartition("counter_state").
         WithVisualization(visConfig).
         Build()
     

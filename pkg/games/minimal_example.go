@@ -26,13 +26,9 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 	// Create the game using the fluent GameBuilder API
 	config := NewGameBuilder("minimal_example").
 		WithDescription("The simplest possible game - just a counter").
-		WithPartition("counter", "counter_state", &MinimalCounterIteration{}).
 		WithServerPartition("counter_state").
-		WithParameter("param_values", []float64{0.0}).
-		WithMaxTime(30.0).
-		WithTimestep(1.0).
+		WithActionStatePartition("counter_state").
 		WithVisualization(visConfig).
-		// Provide a simulation generator that is independent of the builder
 		WithSimulation(BuildMinimalSimulation).
 		Build()
 
@@ -100,9 +96,9 @@ func (m *MinimalCounterIteration) Iterate(
 ) []float64 {
 	outputState := stateHistories[partitionIndex].CopyStateRow(0)
 
-	// Simple counter: get the output "param_values" from the ActionState
+	// Simple counter: get the output "action_state_values" from the ActionState
 	// sent by the Python server
-	outputState[0] = params.Get("param_values")[0]
+	outputState[0] = params.Get("action_state_values")[0]
 
 	return outputState
 }
