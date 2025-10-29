@@ -35,12 +35,7 @@ func main() {
 	// Use the simulation generator from the game config
 	cfg := game.GetConfig()
 	var gen *simulator.ConfigGenerator
-	if cfg.SimulationGenerator != nil {
-		gen = cfg.SimulationGenerator()
-	} else {
-		// Fallback to existing method if not provided
-		gen = game.GetConfigGenerator()
-	}
+	gen = cfg.SimulationGenerator()
 
 	settings, implementations := gen.GenerateConfigs()
 	js.Global().Get("console").Call("log", "Settings and implementations generated from SimulationGenerator")
