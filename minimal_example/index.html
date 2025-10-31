@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dexetera... minimal_example</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 minimal_example</h1>
+        <p class="description">The simplest possible game - just a counter</p>
+        
+        <div class="game-area">
+            <div class="game-container">
+                <canvas id="gameCanvas" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="status" id="status">Waiting for Python server to connect...</div>
+        </div>
+        
+        <div class="info">
+            <h3>🔧 Game Configuration</h3>
+            <div class="config-info">
+                <p><strong>Partitions:</strong> </p>
+                <p><strong>Server Partitions:</strong> counter_state </p>
+                <p><strong>Update Interval:</strong> 100ms</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <h2>Loading Game...</h2>
+            <p>Please wait while the WebAssembly module loads.</p>
+        </div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script src="google-protobuf.js"></script>
+    <script src="partition_state_pb.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@ Decision-making games for the Python programmer built using the [stochadex](http
 ### Build
 ```bash
 # Generate complete game package
-go run ./cmd/generate_game -game minimal_example -output ./minimal_example
+go run ./cmd/minimal_example/generate_game
 
 # Build and run
 cd minimal_example

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"syscall/js"
 
+	"github.com/umbralcalc/dexetera/pkg/game"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 	"google.golang.org/protobuf/proto"
 )
@@ -43,6 +44,23 @@ func (j *JsCallbackOutputFunction) Output(
 	callback.Invoke(uint8Array)
 }
 
+// OnlyNamesCondition filters outputs to only the given partition names
+type OnlyNamesCondition struct{ allow map[string]struct{} }
+
+func (o *OnlyNamesCondition) IsOutputStep(partitionName string, state []float64, cumulativeTimesteps float64) bool {
+	_, ok := o.allow[partitionName]
+	return ok
+}
+
+// NewOnlyNamesCondition creates a new OnlyNamesCondition
+func NewOnlyNamesCondition(names []string) *OnlyNamesCondition {
+	m := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		m[n] = struct{}{}
+	}
+	return &OnlyNamesCondition{allow: m}
+}
+
 // GenerateStepClosure creates a function which steps the stochadex
 // simulation engine given the provided configured inputs.
 func GenerateStepClosure(
@@ -76,13 +94,36 @@ func GenerateStepClosure(
 
 // RegisterStep registers the simulation step function as a JavaScript
 // function which can be called from JavaScript code.
-func RegisterStep(
-	settings *simulator.Settings,
-	implementations *simulator.Implementations,
-	websocketPartitionIndices []int,
-	handle string,
-	address string,
-) {
+func RegisterStep(cfg *game.GameConfig, handle string, address string) {
+	js.Global().Get("console").Call("log", "main function called")
+
+	js.Global().Get("console").Call("log", "game created")
+
+	// Use the simulation generator from the game config
+	var gen *simulator.ConfigGenerator
+	gen = cfg.SimulationGenerator()
+
+	settings, implementations := gen.GenerateConfigs()
+	js.Global().Get("console").Call("log", "Settings and implementations generated from SimulationGenerator")
+
+	// Overwrite output condition to only output given partitions configured by the user
+	if len(cfg.ServerPartitionNames) > 0 {
+		implementations.OutputCondition = NewOnlyNamesCondition(cfg.ServerPartitionNames)
+	}
+
+	// Resolve websocket partition indices by name
+	websocketPartitionIndices := make([]int, 0)
+	for _, name := range cfg.ActionStatePartitionNames {
+		for index, iteration := range settings.Iterations {
+			if iteration.Name == name {
+				websocketPartitionIndices = append(websocketPartitionIndices, index)
+			}
+		}
+	}
+
+	// Register the simulation step function
+	js.Global().Get("console").Call("log", "Calling RegisterStep")
+
 	// Add debugging
 	js.Global().Get("console").Call("log", "RegisterStep called")
 
