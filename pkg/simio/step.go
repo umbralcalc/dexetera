@@ -44,7 +44,7 @@ func (j *JsCallbackOutputFunction) Output(
 	callback.Invoke(uint8Array)
 }
 
-// OnlyNamesCondition filters outputs to only the given partition names
+// OnlyNamesCondition filters outputs to only the given partition names.
 type OnlyNamesCondition struct{ allow map[string]struct{} }
 
 func (o *OnlyNamesCondition) IsOutputStep(partitionName string, state []float64, cumulativeTimesteps float64) bool {
@@ -52,7 +52,7 @@ func (o *OnlyNamesCondition) IsOutputStep(partitionName string, state []float64,
 	return ok
 }
 
-// NewOnlyNamesCondition creates a new OnlyNamesCondition
+// NewOnlyNamesCondition creates a new OnlyNamesCondition.
 func NewOnlyNamesCondition(names []string) *OnlyNamesCondition {
 	m := make(map[string]struct{}, len(names))
 	for _, n := range names {
@@ -100,8 +100,7 @@ func RegisterStep(cfg *game.GameConfig, handle string, address string) {
 	js.Global().Get("console").Call("log", "game created")
 
 	// Use the simulation generator from the game config
-	var gen *simulator.ConfigGenerator
-	gen = cfg.SimulationGenerator()
+	var gen *simulator.ConfigGenerator = cfg.SimulationGenerator()
 
 	settings, implementations := gen.GenerateConfigs()
 	js.Global().Get("console").Call("log", "Settings and implementations generated from SimulationGenerator")
