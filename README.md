@@ -18,15 +18,15 @@ python -m http.server 8000   # Start server
 
 ## Available Games
 
-- `minimal_example` - Simple counter game (demonstrates the new workflow)
+- `minimal_example` - Simple counter game (demonstrates the workflow)
 
 ## Python Integration
 
-The Python server drives the simulation - the frontend only displays the results. Control games with Python using the [dexAct](https://pypi.org/project/dexact/) package:
+The Python server drives the simulation - the frontend only iterates the world state in reponse to the server action states and displays the results. You can control games via action states with Python using the [dexAct](https://pypi.org/project/dexact/) package:
 
 ```bash
 pip install dexact
-python cmd/game_name/action_server.py
+python cmd/minimal_example/action_server.py
 ```
 
-**Note**: This Python action server controls the simulation timing and execution. For example, you can add sleeps into the `ActionTaker.take_next_action` call to slow things down.
+**Note**: Since the Python action server controls the simulation timing and execution, you can add sleeps into the `ActionTaker.take_next_action` call to slow the simulation frontend updates down to make them more human-friendly.
