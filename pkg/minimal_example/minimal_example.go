@@ -39,12 +39,16 @@ func NewMinimalExampleGame() *MinimalExampleGame {
 // BuildMinimalSimulation produces the simulation config generator used by the framework
 func BuildMinimalSimulation() *simulator.ConfigGenerator {
 	gen := simulator.NewConfigGenerator()
-	gen.SetGlobalSeed(42)
 
 	counter := &simulator.PartitionConfig{
-		Name:            "counter_state",
-		Params:          simulator.NewParams(make(map[string][]float64)),
-		InitStateValues: []float64{0.0},
+		Name:      "counter_state",
+		Iteration: &MinimalCounterIteration{},
+		Params: simulator.NewParams(map[string][]float64{
+			"action_state_values": {1.0},
+		}),
+		InitStateValues:   []float64{0.0},
+		StateHistoryDepth: 1,
+		Seed:              123,
 	}
 	gen.SetPartition(counter)
 
