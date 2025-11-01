@@ -1,6 +1,13 @@
 ## Context to help building new games in this repo
 
-Please read the README.md to understand the general flow for building new games in this repo.
+Please read the README.md to understand the general flow for building new games in this repo. There is only one very simple example of the end-to-end flow (minimal_example) and you can gather the general structure of how this fits together from looking at its files:
+
+- pkg/minimal_example - backend game logic and configuration
+- minimal_example/ - generated game
+- cmd/minimal_example/generate_game - script used to generate the minimal_example/ folder
+- cmd/minimal_example/register_step - compiles to `minimal_example/src/main.wasm` using minimal_example/build.sh script
+- cmd/minimal_example/action_server.py - how the user interacts with the simulation site with their python action state sending server
+- cmd/minimal_example/cheatsheet.md - a handy description of what the keys and values in the state dictionary received by the user in their Python `ActionTaker.take_next_action` code can be interpreted to mean
 
 ## Context to help write game simulations into the `simulator.ConfigGenerator`
 
