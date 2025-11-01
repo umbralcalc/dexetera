@@ -314,6 +314,90 @@ func (vb *VisualizationBuilder) AddLineChart(partitionName string, x, y, width, 
 	return vb
 }
 
+// AddProgressBar adds a progress bar renderer
+func (vb *VisualizationBuilder) AddProgressBar(partitionName string, x, y, width, height int, options *ProgressBarOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"x":      x,
+		"y":      y,
+		"width":  width,
+		"height": height,
+	}
+
+	if options != nil {
+		if options.BackgroundColor != "" {
+			props["backgroundColor"] = options.BackgroundColor
+		}
+		if options.ForegroundColor != "" {
+			props["foregroundColor"] = options.ForegroundColor
+		}
+		if options.BorderColor != "" {
+			props["borderColor"] = options.BorderColor
+		}
+		if options.BorderWidth != 0 {
+			props["borderWidth"] = options.BorderWidth
+		}
+		if options.ShowLabel {
+			props["showLabel"] = options.ShowLabel
+		}
+		if options.LabelFormat != "" {
+			props["labelFormat"] = options.LabelFormat
+		}
+		if options.MaxValue != 0 {
+			props["maxValue"] = options.MaxValue
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "progressBar",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
+// AddImage adds an image/sprite renderer
+func (vb *VisualizationBuilder) AddImage(partitionName, imagePath string, x, y int, options *ImageOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"imagePath": imagePath,
+		"x":         x,
+		"y":         y,
+	}
+
+	if options != nil {
+		if options.Width != 0 {
+			props["width"] = options.Width
+		}
+		if options.Height != 0 {
+			props["height"] = options.Height
+		}
+		if options.Rotation != 0 {
+			props["rotation"] = options.Rotation
+		}
+		if options.Opacity != 0 {
+			props["opacity"] = options.Opacity
+		}
+		if options.SpriteSheetX != 0 {
+			props["spriteSheetX"] = options.SpriteSheetX
+		}
+		if options.SpriteSheetY != 0 {
+			props["spriteSheetY"] = options.SpriteSheetY
+		}
+		if options.CenterX {
+			props["centerX"] = options.CenterX
+		}
+		if options.CenterY {
+			props["centerY"] = options.CenterY
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "image",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
 // Build creates the final VisualizationConfig
 func (vb *VisualizationBuilder) Build() *VisualizationConfig {
 	return vb.config
@@ -351,6 +435,29 @@ type ChartOptions struct {
 	ShowLabels  bool
 	LabelFormat string
 	LineWidth   int
+}
+
+// ProgressBarOptions provides options for progress bar rendering
+type ProgressBarOptions struct {
+	BackgroundColor string
+	ForegroundColor string
+	BorderColor     string
+	BorderWidth     int
+	ShowLabel       bool
+	LabelFormat     string
+	MaxValue        float64
+}
+
+// ImageOptions provides options for image/sprite rendering
+type ImageOptions struct {
+	Width        int
+	Height       int
+	Rotation     float64
+	Opacity      float64
+	SpriteSheetX int
+	SpriteSheetY int
+	CenterX      bool
+	CenterY      bool
 }
 
 // ImplementationConfig holds configuration for simulation implementations
@@ -646,7 +753,7 @@ class GenericRenderer {
     
     renderElement(renderer) {
         const state = this.state[renderer.partitionName];
-        if (!state) return;
+        if (!state && renderer.partitionName !== '') return;
         
         switch (renderer.type) {
             case 'text':
@@ -666,6 +773,12 @@ class GenericRenderer {
                 break;
             case 'lineChart':
                 this.renderLineChart(renderer, state);
+                break;
+            case 'progressBar':
+                this.renderProgressBar(renderer, state);
+                break;
+            case 'image':
+                this.renderImage(renderer, state);
                 break;
         }
     }
@@ -714,6 +827,7 @@ class GenericRenderer {
         const width = renderer.properties.width || 50;
         const height = renderer.properties.height || 50;
         
+        // For static rectangles, always render
         if (renderer.properties.fillColor) {
             this.ctx.fillStyle = renderer.properties.fillColor;
             this.ctx.fillRect(x, y, width, height);
@@ -729,6 +843,132 @@ class GenericRenderer {
             this.ctx.fillStyle = renderer.properties.color || '#ffffff';
             this.ctx.fillRect(x, y, width, height);
         }
+    }
+    
+    renderLine(renderer, state) {
+        const x1 = renderer.properties.x1 || 0;
+        const y1 = renderer.properties.y1 || 0;
+        const x2 = renderer.properties.x2 || 50;
+        const y2 = renderer.properties.y2 || 50;
+        
+        // For static lines, always render
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.strokeStyle = renderer.properties.color || '#ffffff';
+        this.ctx.lineWidth = renderer.properties.width || 1;
+        this.ctx.stroke();
+    }
+    
+    renderBarChart(renderer, state) {
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 50;
+        const height = renderer.properties.height || 50;
+        const maxValue = renderer.properties.maxValue || 100;
+        const value = state[0] || 0;
+        const normalizedValue = Math.min(value / maxValue, 1.0);
+        
+        // Draw background
+        this.ctx.fillStyle = renderer.properties.color || 'rgba(255,255,255,0.3)';
+        this.ctx.fillRect(x, y, width, height);
+        
+        // Draw bar
+        this.ctx.fillStyle = renderer.properties.color || '#4CAF50';
+        this.ctx.fillRect(x, y + height * (1 - normalizedValue), width, height * normalizedValue);
+        
+        // Draw label if requested
+        if (renderer.properties.showLabels) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(Math.floor(value), x + width / 2, y + height / 2);
+        }
+    }
+    
+    renderLineChart(renderer, state) {
+        const history = this.history[renderer.partitionName];
+        if (!history || history.length < 2) return;
+        
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 50;
+        const height = renderer.properties.height || 50;
+        const maxValue = renderer.properties.maxValue || 100;
+        
+        // Find min/max for scaling
+        let minVal = Infinity, maxVal = -Infinity;
+        history.forEach(point => {
+            minVal = Math.min(minVal, point.value);
+            maxVal = Math.max(maxVal, point.value);
+        });
+        const range = Math.max(maxVal - minVal, 0.1);
+        
+        this.ctx.strokeStyle = renderer.properties.color || '#4CAF50';
+        this.ctx.lineWidth = renderer.properties.lineWidth || 2;
+        this.ctx.beginPath();
+        
+        history.forEach((point, i) => {
+            const px = x + (i / (history.length - 1)) * width;
+            const py = y + height - ((point.value - minVal) / range) * height;
+            
+            if (i === 0) {
+                this.ctx.moveTo(px, py);
+            } else {
+                this.ctx.lineTo(px, py);
+            }
+        });
+        
+        this.ctx.stroke();
+    }
+    
+    renderProgressBar(renderer, state) {
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        const width = renderer.properties.width || 100;
+        const height = renderer.properties.height || 20;
+        const maxValue = renderer.properties.maxValue || 100;
+        const value = Math.max(0, Math.min(state[0] || 0, maxValue));
+        const normalizedValue = value / maxValue;
+        
+        // Draw background
+        this.ctx.fillStyle = renderer.properties.backgroundColor || 'rgba(255,255,255,0.3)';
+        this.ctx.fillRect(x, y, width, height);
+        
+        // Draw progress
+        this.ctx.fillStyle = renderer.properties.foregroundColor || '#4CAF50';
+        this.ctx.fillRect(x, y, width * normalizedValue, height);
+        
+        // Draw border if specified
+        if (renderer.properties.borderColor) {
+            this.ctx.strokeStyle = renderer.properties.borderColor;
+            this.ctx.lineWidth = renderer.properties.borderWidth || 1;
+            this.ctx.strokeRect(x, y, width, height);
+        }
+        
+        // Draw label if requested
+        if (renderer.properties.showLabel) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(Math.floor(value) + '%', x + width / 2, y + height / 2 + 4);
+        }
+    }
+    
+    renderImage(renderer, state) {
+        const imagePath = renderer.properties.imagePath;
+        if (!imagePath) return;
+        
+        // For now, we'll implement basic rendering
+        // In a full implementation, you'd load and cache images
+        const x = renderer.properties.x || 0;
+        const y = renderer.properties.y || 0;
+        
+        // Draw placeholder rectangle for now
+        this.ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        this.ctx.fillRect(x, y, 
+            renderer.properties.width || 32, 
+            renderer.properties.height || 32);
     }
 }
 

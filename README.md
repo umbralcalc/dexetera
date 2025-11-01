@@ -4,7 +4,7 @@ Decision-making games for the Python programmer built using the [stochadex](http
 
 ## Quick Start
 
-### Build
+### Build minimal_example
 ```bash
 # Generate complete game package
 go run ./cmd/minimal_example/generate_game
@@ -16,9 +16,22 @@ python -m http.server 8000   # Start server
 # Open http://localhost:8000
 ```
 
+### Build team_sport
+```bash
+# Generate complete game package
+go run ./cmd/team_sport/generate_game
+
+# Build and run
+cd team_sport
+./build.sh                    # Builds WebAssembly
+python -m http.server 8000   # Start server
+# Open http://localhost:8000
+```
+
 ## Available Games
 
 - `minimal_example` - Simple counter game (demonstrates the workflow)
+- `team_sport` - Team sport manager game where you make strategic substitutions to win!
 
 ## Python Integration
 
