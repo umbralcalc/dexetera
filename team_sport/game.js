@@ -6,7 +6,7 @@ const gameConfig = {
     partitionNames: {
         
     },
-    serverPartitionNames: ["score", "team_a_stamina", "team_b_stamina", ],
+    serverPartitionNames: ["score", "team_a_stamina", "team_b_stamina", "team_a_substitutions", "team_b_substitutions", ],
     visualization: {
         canvasWidth: 800,
         canvasHeight: 600,
@@ -111,6 +111,32 @@ const gameConfig = {
                     "text": "Score: {value}",
                     "x": 400,
                     "y": 50,
+                }
+            },
+            {
+                type: "text",
+                partitionName: "team_a_substitutions",
+                properties: {
+                    
+                    "color": "#ffffff",
+                    "fontFamily": "Arial",
+                    "fontSize": 12,
+                    "text": "Subs: {value}",
+                    "x": 150,
+                    "y": 130,
+                }
+            },
+            {
+                type: "text",
+                partitionName: "team_b_substitutions",
+                properties: {
+                    
+                    "color": "#ffffff",
+                    "fontFamily": "Arial",
+                    "fontSize": 12,
+                    "text": "Subs: {value}",
+                    "x": 450,
+                    "y": 130,
                 }
             },
         ]

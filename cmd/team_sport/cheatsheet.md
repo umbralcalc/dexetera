@@ -1,7 +1,7 @@
 # Team Sport Game Cheatsheet
 
 ## Game Overview
-This game simulates a team sport match where you manage team substitutions. Your goal is to strategically substitute players to maintain high stamina and outscore the opponent.
+This game simulates a team sport match where you manage team substitutions. Your goal is to strategically substitute players to maintain high stamina and outscore the opponent. Each team has 11 players on the field and 3 substitutions available.
 
 ## State Partition Meanings
 
@@ -15,32 +15,55 @@ This game simulates a team sport match where you manage team substitutions. Your
 - **Index 0**: Average stamina percentage of Team A (0-100)
   - Starts at 80%
   - Decreases by 0.5% per second naturally
-  - Can be restored to base level (80%) by making a substitution
+  - Can be restored to base level (80%) by making a substitution (if substitutions remain)
 
 ### `states["team_b_stamina"]`
 - **Index 0**: Average stamina percentage of Team B (0-100)
   - Starts at 75%
   - Decreases by 0.5% per second naturally
 
+### `states["team_a_substitutions"]`
+- **Index 0**: Number of substitutions remaining for Team A (0-3)
+  - Starts at 3
+  - Decrements by 1 each time you make a substitution
+  - Substitutions only work if this value is greater than 0
+
+### `states["team_b_substitutions"]`
+- **Index 0**: Number of substitutions remaining for Team B (0-3)
+  - Starts at 3
+  - Team B doesn't make substitutions (controlled by AI)
+
+### `states["team_a_players_on_field"]`
+- **Index 0**: Number of players on field for Team A
+  - Constant value: 11
+
+### `states["team_b_players_on_field"]`
+- **Index 0**: Number of players on field for Team B
+  - Constant value: 11
+
 ## Action State
 
 ### `action_state_values`
 Your action should be a single-element list:
 - **`[0.0]`**: No substitution
-- **`[1.0]`**: Make a substitution (restores Team A stamina to 80%)
+- **`[1.0]`**: Make a substitution (restores Team A stamina to 80%, decrements substitution count)
 
 ## Game Mechanics
 
+- **Players on field**: Each team has 11 players on the field (constant)
+- **Substitutions available**: Each team starts with 3 substitutions
 - **Stamina decay**: Both teams lose 0.5% stamina per second
-- **Substitutions**: Restore your team's stamina to 80%
+- **Substitutions**: Restore your team's stamina to 80%, but only if you have substitutions remaining
 - **Scoring**: The team with higher stamina scores more points
 - **Match duration**: 90 seconds
-- **Strategy**: Make timely substitutions to keep stamina high and score points!
+- **Strategy**: Make timely substitutions to keep stamina high, but use them wisely - you only have 3!
 
 ## Tips
 
 1. Monitor your stamina closely - let it drop too low and you'll fall behind
-2. Substitutions are powerful but you need to time them well
-3. If your score is negative, you're losing - make a substitution!
-4. The opponent (Team B) starts slightly weaker but doesn't substitute
+2. Substitutions are powerful but limited - you only have 3, so use them strategically
+3. Check `team_a_substitutions` before making a substitution - if it's 0, substitutions won't work
+4. If your score is negative, you're losing - consider making a substitution if you have any left
+5. The opponent (Team B) starts slightly weaker but doesn't substitute
+6. Save at least one substitution for the final minutes if possible
 

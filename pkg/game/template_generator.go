@@ -69,7 +69,7 @@ func (gtg *GameTemplateGenerator) generateHTML(outputDir string) error {
 </head>
 <body>
     <div class="container">
-        <h1>🎮 {{.GameName}}</h1>
+        <h1>{{.GameName}}</h1>
         <p class="description">{{.Description}}</p>
         
         <div class="game-area">
@@ -83,8 +83,7 @@ func (gtg *GameTemplateGenerator) generateHTML(outputDir string) error {
         <div class="info">
             <h3>🔧 Game Configuration</h3>
             <div class="config-info">
-                <p><strong>Partitions:</strong> {{range $key, $value := .PartitionNames}}{{$key}} ({{$value}}){{end}}</p>
-                <p><strong>Server Partitions:</strong> {{range .ServerPartitionNames}}{{.}} {{end}}</p>
+                <p><strong>Server States:</strong> {{range .ServerPartitionNames}}{{.}} {{end}}</p>
                 <p><strong>Update Interval:</strong> {{.UpdateIntervalMs}}ms</p>
             </div>
         </div>

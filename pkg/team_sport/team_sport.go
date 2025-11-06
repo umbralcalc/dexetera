@@ -62,6 +62,18 @@ func NewTeamSportGame() *TeamSportGame {
 			Color:      "#ffffff",
 			FontFamily: "Arial",
 		}).
+		// Team A substitutions remaining
+		AddText("team_a_substitutions", "Subs: {value}", 150, 130, &game.TextOptions{
+			FontSize:   12,
+			Color:      "#ffffff",
+			FontFamily: "Arial",
+		}).
+		// Team B substitutions remaining
+		AddText("team_b_substitutions", "Subs: {value}", 450, 130, &game.TextOptions{
+			FontSize:   12,
+			Color:      "#ffffff",
+			FontFamily: "Arial",
+		}).
 		Build()
 
 	// Create the game using the fluent GameBuilder API
@@ -70,7 +82,10 @@ func NewTeamSportGame() *TeamSportGame {
 		WithServerPartition("score").
 		WithServerPartition("team_a_stamina").
 		WithServerPartition("team_b_stamina").
+		WithServerPartition("team_a_substitutions").
+		WithServerPartition("team_b_substitutions").
 		WithActionStatePartition("team_a_stamina").
+		WithActionStatePartition("team_a_substitutions").
 		WithVisualization(visConfig).
 		WithSimulation(BuildTeamSportSimulation).
 		Build()
@@ -81,6 +96,60 @@ func NewTeamSportGame() *TeamSportGame {
 // BuildTeamSportSimulation produces the simulation config generator
 func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 	gen := simulator.NewConfigGenerator()
+
+	// Team A players on field partition - constant number of players
+	teamAPlayers := &simulator.PartitionConfig{
+		Name:      "team_a_players_on_field",
+		Iteration: &ConstantValueIteration{},
+		Params: simulator.NewParams(map[string][]float64{
+			"constant_value": {11.0}, // 11 players on field
+		}),
+		InitStateValues:   []float64{11.0},
+		StateHistoryDepth: 1,
+		Seed:              120,
+	}
+	gen.SetPartition(teamAPlayers)
+
+	// Team B players on field partition - constant number of players
+	teamBPlayers := &simulator.PartitionConfig{
+		Name:      "team_b_players_on_field",
+		Iteration: &ConstantValueIteration{},
+		Params: simulator.NewParams(map[string][]float64{
+			"constant_value": {11.0}, // 11 players on field
+		}),
+		InitStateValues:   []float64{11.0},
+		StateHistoryDepth: 1,
+		Seed:              121,
+	}
+	gen.SetPartition(teamBPlayers)
+
+	// Team A substitutions remaining partition
+	teamASubstitutions := &simulator.PartitionConfig{
+		Name:      "team_a_substitutions",
+		Iteration: &SubstitutionCountIteration{},
+		Params: simulator.NewParams(map[string][]float64{
+			"action_state_values": {0.0}, // substitution action
+			"max_substitutions":  {3.0},  // 3 substitutions allowed
+		}),
+		InitStateValues:   []float64{3.0}, // Start with 3 substitutions
+		StateHistoryDepth: 1,
+		Seed:              122,
+	}
+	gen.SetPartition(teamASubstitutions)
+
+	// Team B substitutions remaining partition
+	teamBSubstitutions := &simulator.PartitionConfig{
+		Name:      "team_b_substitutions",
+		Iteration: &SubstitutionCountIteration{},
+		Params: simulator.NewParams(map[string][]float64{
+			"action_state_values": {0.0}, // substitution action (not used for team B)
+			"max_substitutions":  {3.0},  // 3 substitutions allowed
+		}),
+		InitStateValues:   []float64{3.0}, // Start with 3 substitutions
+		StateHistoryDepth: 1,
+		Seed:              123,
+	}
+	gen.SetPartition(teamBSubstitutions)
 
 	// Team A stamina partition - average stamina of all players on team A
 	teamAStamina := &simulator.PartitionConfig{
@@ -93,7 +162,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		}),
 		InitStateValues:   []float64{80.0}, // Start at 80% stamina
 		StateHistoryDepth: 1,
-		Seed:              123,
+		Seed:              124,
 	}
 	gen.SetPartition(teamAStamina)
 
@@ -108,7 +177,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		}),
 		InitStateValues:   []float64{75.0}, // Start at 75% stamina
 		StateHistoryDepth: 1,
-		Seed:              124,
+		Seed:              125,
 	}
 	gen.SetPartition(teamBStamina)
 
@@ -121,7 +190,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		}),
 		InitStateValues:   []float64{0.0}, // Start at 0-0
 		StateHistoryDepth: 1,
-		Seed:              125,
+		Seed:              126,
 	}
 	gen.SetPartition(score)
 
@@ -176,9 +245,27 @@ func (t *TeamStaminaIteration) Iterate(
 	staminaDecay := params.Get("stamina_decay")[0]
 	substitutionAction := params.Get("action_state_values")[0]
 
-	// If substitution action is triggered, boost stamina
-	if substitutionAction > 0.5 {
-		currentStamina[0] = baseStamina // Fresh players on field
+	// Determine which team this is (Team A = partition 4, Team B = partition 5)
+	// Partition order: team_a_players(0), team_b_players(1), team_a_subs(2), team_b_subs(3), team_a_stamina(4), team_b_stamina(5)
+	var substitutionPartitionIndex int
+	if partitionIndex == 4 { // Team A stamina
+		substitutionPartitionIndex = 2 // Team A substitutions
+	} else if partitionIndex == 5 { // Team B stamina
+		substitutionPartitionIndex = 3 // Team B substitutions
+	} else {
+		substitutionPartitionIndex = -1
+	}
+
+	// If substitution action is triggered, check if substitutions are available
+	if substitutionAction > 0.5 && substitutionPartitionIndex >= 0 {
+		substitutionsRemaining := stateHistories[substitutionPartitionIndex].CopyStateRow(0)[0]
+		if substitutionsRemaining > 0 {
+			// Substitution is allowed - boost stamina
+			currentStamina[0] = baseStamina // Fresh players on field
+		} else {
+			// No substitutions left - just decay normally
+			currentStamina[0] = currentStamina[0] - staminaDecay
+		}
 	} else {
 		// Otherwise, decay stamina over time
 		currentStamina[0] = currentStamina[0] - staminaDecay
@@ -214,9 +301,9 @@ func (s *ScoreIteration) Iterate(
 	currentScore := stateHistories[partitionIndex].CopyStateRow(0)
 	scoringRate := params.Get("scoring_rate")[0]
 
-	// Get team stamina values (partition indices: Team A = 0, Team B = 1)
-	teamAStamina := stateHistories[0].CopyStateRow(0)[0]
-	teamBStamina := stateHistories[1].CopyStateRow(0)[0]
+	// Get team stamina values (partition indices: Team A stamina = 4, Team B stamina = 5)
+	teamAStamina := stateHistories[4].CopyStateRow(0)[0]
+	teamBStamina := stateHistories[5].CopyStateRow(0)[0]
 
 	// More stamina = better chance to score
 	// Score changes based on stamina difference
@@ -227,5 +314,61 @@ func (s *ScoreIteration) Iterate(
 	currentScore[0] += scoreChange
 
 	return currentScore
+}
+
+// ConstantValueIteration maintains a constant value
+type ConstantValueIteration struct{}
+
+func (c *ConstantValueIteration) Configure(
+	partitionIndex int,
+	settings *simulator.Settings,
+) {
+	// No configuration needed
+}
+
+func (c *ConstantValueIteration) Iterate(
+	params *simulator.Params,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	constantValue := params.Get("constant_value")[0]
+	return []float64{constantValue}
+}
+
+// SubstitutionCountIteration tracks remaining substitutions
+type SubstitutionCountIteration struct{}
+
+func (s *SubstitutionCountIteration) Configure(
+	partitionIndex int,
+	settings *simulator.Settings,
+) {
+	// No configuration needed
+}
+
+func (s *SubstitutionCountIteration) Iterate(
+	params *simulator.Params,
+	partitionIndex int,
+	stateHistories []*simulator.StateHistory,
+	timestepsHistory *simulator.CumulativeTimestepsHistory,
+) []float64 {
+	currentSubs := stateHistories[partitionIndex].CopyStateRow(0)
+	substitutionAction := params.Get("action_state_values")[0]
+	maxSubstitutions := params.Get("max_substitutions")[0]
+
+	// If substitution action is triggered, decrement count
+	if substitutionAction > 0.5 && currentSubs[0] > 0 {
+		currentSubs[0] = currentSubs[0] - 1.0
+	}
+
+	// Clamp between 0 and max
+	if currentSubs[0] < 0.0 {
+		currentSubs[0] = 0.0
+	}
+	if currentSubs[0] > maxSubstitutions {
+		currentSubs[0] = maxSubstitutions
+	}
+
+	return currentSubs
 }
 
