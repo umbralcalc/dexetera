@@ -4,7 +4,6 @@ import time
 
 class TeamSportActionTaker(ActionTaker):
     def __init__(self):
-        super().__init__()
         self.last_substitution_time = 0.0
         self.substitution_cooldown = 10.0  # Can only substitute every 10 seconds
     
@@ -46,5 +45,5 @@ class TeamSportActionTaker(ActionTaker):
 
 
 if __name__ == "__main__":
-    launch_websocket_server(TeamSportActionTaker(), num_state_keys=1)
+    launch_websocket_server(TeamSportActionTaker(), num_state_keys=7)
 

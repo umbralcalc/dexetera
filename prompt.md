@@ -6,7 +6,7 @@ Please read the README.md to understand the general flow for building new games 
 - team_sport/ - generated game
 - cmd/team_sport/generate_game - script used to generate the team_sport/ folder
 - cmd/team_sport/register_step - compiles to `team_sport/src/main.wasm` using team_sport/build.sh script
-- cmd/team_sport/action_server.py - how the user interacts with the simulation site with their python action state sending server
+- cmd/team_sport/action_server.py - how the user interacts with the simulation site with their python action state sending server (note the 'num_state_keys' kwarg in the launch_websocket_server function needs to be set to the total number of unique state partition keys expected to be sent to the server from the simulation every point in time)
 - cmd/team_sport/cheatsheet.md - a handy description of what the keys and values in the state dictionary received by the user in their Python `ActionTaker.take_next_action` code can be interpreted to mean
 
 ## Context to help write game simulations into the `simulator.ConfigGenerator`
