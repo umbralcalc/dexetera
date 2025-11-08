@@ -17,7 +17,7 @@ func NewTeamSportGame() *TeamSportGame {
 	visConfig := game.NewVisualizationBuilder().
 		WithCanvas(800, 600).
 		WithBackground("#0d7f3e").
-		WithUpdateInterval(50).
+		WithUpdateInterval(0).
 		// Add field markings
 		AddRectangle("", 50, 150, 700, 400, &game.ShapeOptions{
 			StrokeColor: "#ffffff",
@@ -35,12 +35,12 @@ func NewTeamSportGame() *TeamSportGame {
 			FontFamily: "Arial",
 		}).
 		AddProgressBar("team_a_stamina", 150, 90, 200, 30, &game.ProgressBarOptions{
-			BackgroundColor:  "rgba(255,255,255,0.3)",
-			ForegroundColor:  "#4CAF50",
-			BorderColor:      "#ffffff",
-			BorderWidth:      2,
-			ShowLabel:        true,
-			MaxValue:         100,
+			BackgroundColor: "rgba(255,255,255,0.3)",
+			ForegroundColor: "#4CAF50",
+			BorderColor:     "#ffffff",
+			BorderWidth:     2,
+			ShowLabel:       true,
+			MaxValue:        100,
 		}).
 		// Team B stamina bar
 		AddText("team_b_stamina", "Team B Stamina", 450, 70, &game.TextOptions{
@@ -49,12 +49,12 @@ func NewTeamSportGame() *TeamSportGame {
 			FontFamily: "Arial",
 		}).
 		AddProgressBar("team_b_stamina", 450, 90, 200, 30, &game.ProgressBarOptions{
-			BackgroundColor:  "rgba(255,255,255,0.3)",
-			ForegroundColor:  "#f44336",
-			BorderColor:      "#ffffff",
-			BorderWidth:      2,
-			ShowLabel:        true,
-			MaxValue:         100,
+			BackgroundColor: "rgba(255,255,255,0.3)",
+			ForegroundColor: "#f44336",
+			BorderColor:     "#ffffff",
+			BorderWidth:     2,
+			ShowLabel:       true,
+			MaxValue:        100,
 		}).
 		// Score display
 		AddText("score", "Score: {value}", 400, 50, &game.TextOptions{
@@ -129,7 +129,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		Iteration: &SubstitutionCountIteration{},
 		Params: simulator.NewParams(map[string][]float64{
 			"action_state_values": {0.0}, // substitution action
-			"max_substitutions":  {3.0},  // 3 substitutions allowed
+			"max_substitutions":   {3.0}, // 3 substitutions allowed
 		}),
 		InitStateValues:   []float64{3.0}, // Start with 3 substitutions
 		StateHistoryDepth: 1,
@@ -143,7 +143,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		Iteration: &SubstitutionCountIteration{},
 		Params: simulator.NewParams(map[string][]float64{
 			"action_state_values": {0.0}, // substitution action (not used for team B)
-			"max_substitutions":  {3.0},  // 3 substitutions allowed
+			"max_substitutions":   {3.0}, // 3 substitutions allowed
 		}),
 		InitStateValues:   []float64{3.0}, // Start with 3 substitutions
 		StateHistoryDepth: 1,
@@ -172,7 +172,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 		Iteration: &TeamStaminaIteration{},
 		Params: simulator.NewParams(map[string][]float64{
 			"action_state_values": {0.0}, // substitution action
-			"base_stamina":        {75.0},
+			"base_stamina":        {80.0},
 			"stamina_decay":       {0.5},
 		}),
 		InitStateValues:   []float64{75.0}, // Start at 75% stamina
@@ -196,7 +196,7 @@ func BuildTeamSportSimulation() *simulator.ConfigGenerator {
 
 	sim := &simulator.SimulationConfig{
 		OutputCondition:      &simulator.EveryStepOutputCondition{},
-		TerminationCondition: &simulator.TimeElapsedTerminationCondition{MaxTimeElapsed: 91.0},
+		TerminationCondition: &simulator.TimeElapsedTerminationCondition{MaxTimeElapsed: 10000.0},
 		TimestepFunction:     &simulator.ConstantTimestepFunction{Stepsize: 1.0},
 		InitTimeValue:        0.0,
 	}
@@ -371,4 +371,3 @@ func (s *SubstitutionCountIteration) Iterate(
 
 	return currentSubs
 }
-

@@ -17,6 +17,7 @@ class TeamSportActionTaker(ActionTaker):
         Returns substitution action: [0.0] = no substitution, [1.0] = substitute
         """
         print(f"Time: {time_val:.1f}s")
+        time.sleep(1.0)
         
         team_a_stamina = states["team_a_stamina"][0]
         team_b_stamina = states["team_b_stamina"][0]

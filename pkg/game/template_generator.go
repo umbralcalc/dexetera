@@ -84,7 +84,6 @@ func (gtg *GameTemplateGenerator) generateHTML(outputDir string) error {
             <h3>🔧 Game Configuration</h3>
             <div class="config-info">
                 <p><strong>Server States:</strong> {{range .ServerPartitionNames}}{{.}} {{end}}</p>
-                <p><strong>Update Interval:</strong> {{.UpdateIntervalMs}}ms</p>
             </div>
         </div>
     </div>
@@ -146,7 +145,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 20px;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: rgba(0,0,0,1.0);
     color: #ffffff;
     min-height: 100vh;
 }
@@ -161,7 +160,6 @@ h1 {
     text-align: center;
     margin-bottom: 10px;
     font-size: 2.5em;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .description {
@@ -183,7 +181,6 @@ h1 {
     border: 2px solid #444;
     border-radius: 8px;
     padding: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .game-container canvas {
@@ -367,7 +364,7 @@ function initializeGame() {
         action: 'start', 
         wasmBinary: 'src/main.wasm',
         serverPartitionNames: gameConfig.serverPartitionNames,
-        stopAtSimTime: 30.05,
+        stopAtSimTime: 10000.00,
         debugMode: false
     });
 }

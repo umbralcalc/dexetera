@@ -11,7 +11,7 @@ const gameConfig = {
         canvasWidth: 800,
         canvasHeight: 600,
         backgroundColor: "#0d7f3e",
-        updateIntervalMs: 50,
+        updateIntervalMs: 0,
         renderers: [
             
             {
@@ -188,7 +188,7 @@ function initializeGame() {
         action: 'start', 
         wasmBinary: 'src/main.wasm',
         serverPartitionNames: gameConfig.serverPartitionNames,
-        stopAtSimTime: 30.05,
+        stopAtSimTime: 10000.00,
         debugMode: false
     });
 }
