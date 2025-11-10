@@ -9,7 +9,21 @@ This game simulates a team sport match where you manage team substitutions. Your
 - **Index 0**: Current score differential (Team A - Team B)
   - Positive values mean Team A is winning
   - Negative values mean Team B is winning
-  - Score increases when your team has more stamina than the opponent
+- **Index 1**: Goal flag from the previous step
+  - `1.0` indicates Team A scored on the last step
+  - `-1.0` indicates Team B scored on the last step
+  - `0.0` means no recent goal (players keep moving)
+
+### `states["team_a_players"]`
+- Contains the `(x, y)` positions for Team A players
+- Even indices (0, 2, 4, ...) are x-positions
+- Odd indices (1, 3, 5, ...) are y-positions
+- Players start near the left of the field and advance toward the right goal
+
+### `states["team_b_players"]`
+- Contains the `(x, y)` positions for Team B players
+- Even indices are x-positions, odd indices are y-positions
+- Players start near the right of the field and advance toward the left goal
 
 ### `states["team_a_stamina"]`
 - **Index 0**: Average stamina percentage of Team A (0-100)
@@ -19,7 +33,7 @@ This game simulates a team sport match where you manage team substitutions. Your
 
 ### `states["team_b_stamina"]`
 - **Index 0**: Average stamina percentage of Team B (0-100)
-  - Starts at 75%
+  - Starts at 80%
   - Decreases by 0.5% per second naturally
 
 ### `states["team_a_substitutions"]`
@@ -33,14 +47,6 @@ This game simulates a team sport match where you manage team substitutions. Your
   - Starts at 3
   - Team B doesn't make substitutions (controlled by AI)
 
-### `states["team_a_players_on_field"]`
-- **Index 0**: Number of players on field for Team A
-  - Constant value: 11
-
-### `states["team_b_players_on_field"]`
-- **Index 0**: Number of players on field for Team B
-  - Constant value: 11
-
 ## Action State
 
 ### `action_state_values`
@@ -50,12 +56,14 @@ Your action should be a single-element list:
 
 ## Game Mechanics
 
-- **Players on field**: Each team has 11 players on the field (constant)
+- **Players on field**: Each team has 11 players whose positions update each step
+- **Movement speed**: Players move faster when stamina is high; low stamina slows them down
 - **Substitutions available**: Each team starts with 3 substitutions
 - **Stamina decay**: Both teams lose 0.5% stamina per second
-- **Substitutions**: Restore your team's stamina to 80%, but only if you have substitutions remaining
-- **Scoring**: The team with higher stamina scores more points
-- **Match duration**: 90 seconds
+- **Substitutions**: Restore Team A stamina to 80%, but only if you have substitutions remaining
+- **Scoring**: Team A scores when one of their players reaches the opponent's goal line (x ≈ 710); Team B scores when reaching x ≈ 90
+- **Goal flag**: The second value in `score` tells you who scored in the previous step so you can react or display effects
+- **Match duration**: The simulation keeps running (long horizon) so your strategy can be tested over many possessions
 - **Strategy**: Make timely substitutions to keep stamina high, but use them wisely - you only have 3!
 
 ## Tips
@@ -64,6 +72,6 @@ Your action should be a single-element list:
 2. Substitutions are powerful but limited - you only have 3, so use them strategically
 3. Check `team_a_substitutions` before making a substitution - if it's 0, substitutions won't work
 4. If your score is negative, you're losing - consider making a substitution if you have any left
-5. The opponent (Team B) starts slightly weaker but doesn't substitute
-6. Save at least one substitution for the final minutes if possible
+5. The opponent (Team B) doesn't substitute, but their players still move with their stamina baseline
+6. Save at least one substitution for the final minutes if possible to counter fatigue
 

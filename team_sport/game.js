@@ -6,7 +6,7 @@ const gameConfig = {
     partitionNames: {
         
     },
-    serverPartitionNames: ["score", "team_a_stamina", "team_b_stamina", "team_a_substitutions", "team_b_substitutions", ],
+    serverPartitionNames: ["score", "team_a_stamina", "team_b_stamina", "team_a_substitutions", "team_b_substitutions", "team_a_players", "team_b_players", ],
     visualization: {
         canvasWidth: 800,
         canvasHeight: 600,
@@ -139,6 +139,28 @@ const gameConfig = {
                     "y": 130,
                 }
             },
+            {
+                type: "pointSet",
+                partitionName: "team_a_players",
+                properties: {
+                    
+                    "fillColor": "#4CAF50",
+                    "radius": 8,
+                    "strokeColor": "#1B5E20",
+                    "strokeWidth": 2,
+                }
+            },
+            {
+                type: "pointSet",
+                partitionName: "team_b_players",
+                properties: {
+                    
+                    "fillColor": "#f44336",
+                    "radius": 8,
+                    "strokeColor": "#B71C1C",
+                    "strokeWidth": 2,
+                }
+            },
         ]
     }
 };
@@ -260,6 +282,10 @@ class GenericRenderer {
                 break;
             case 'image':
                 this.renderImage(renderer, state);
+                break;
+            case 'playerSet':
+            case 'pointSet':
+                this.renderPointSet(renderer, state);
                 break;
         }
     }
@@ -450,6 +476,32 @@ class GenericRenderer {
         this.ctx.fillRect(x, y, 
             renderer.properties.width || 32, 
             renderer.properties.height || 32);
+    }
+
+    renderPointSet(renderer, state) {
+        const radius = renderer.properties.radius || 8;
+        const fill = renderer.properties.fillColor || renderer.properties.color || '#ffffff';
+        const stroke = renderer.properties.strokeColor;
+        const strokeWidth = renderer.properties.strokeWidth || 1;
+
+        for (let i = 0; i < state.length; i += 2) {
+            const x = state[i];
+            const y = state[i + 1];
+            if (typeof x !== 'number' || typeof y !== 'number') {
+                continue;
+            }
+
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            this.ctx.fillStyle = fill;
+            this.ctx.fill();
+
+            if (stroke) {
+                this.ctx.strokeStyle = stroke;
+                this.ctx.lineWidth = strokeWidth;
+                this.ctx.stroke();
+            }
+        }
     }
 }
 

@@ -398,6 +398,37 @@ func (vb *VisualizationBuilder) AddImage(partitionName, imagePath string, x, y i
 	return vb
 }
 
+// AddPointSet adds a renderer that draws multiple point markers using the
+// dynamic (x, y) coordinates stored in the partition values.
+func (vb *VisualizationBuilder) AddPointSet(partitionName string, options *PointSetOptions) *VisualizationBuilder {
+	props := map[string]interface{}{}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.FillColor != "" {
+			props["fillColor"] = options.FillColor
+		}
+		if options.StrokeColor != "" {
+			props["strokeColor"] = options.StrokeColor
+		}
+		if options.StrokeWidth != 0 {
+			props["strokeWidth"] = options.StrokeWidth
+		}
+		if options.Radius != 0 {
+			props["radius"] = options.Radius
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "pointSet",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
 // Build creates the final VisualizationConfig
 func (vb *VisualizationBuilder) Build() *VisualizationConfig {
 	return vb.config
@@ -458,6 +489,16 @@ type ImageOptions struct {
 	SpriteSheetY int
 	CenterX      bool
 	CenterY      bool
+}
+
+// PointSetOptions provides options for rendering multiple points from a
+// single partition where each pair of values represents an (x, y) position.
+type PointSetOptions struct {
+	Color       string
+	FillColor   string
+	StrokeColor string
+	StrokeWidth int
+	Radius      int
 }
 
 // ImplementationConfig holds configuration for simulation implementations
@@ -780,6 +821,10 @@ class GenericRenderer {
             case 'image':
                 this.renderImage(renderer, state);
                 break;
+            case 'playerSet':
+            case 'pointSet':
+                this.renderPointSet(renderer, state);
+                break;
         }
     }
     
@@ -969,6 +1014,32 @@ class GenericRenderer {
         this.ctx.fillRect(x, y, 
             renderer.properties.width || 32, 
             renderer.properties.height || 32);
+    }
+
+    renderPointSet(renderer, state) {
+        const radius = renderer.properties.radius || 8;
+        const fill = renderer.properties.fillColor || renderer.properties.color || '#ffffff';
+        const stroke = renderer.properties.strokeColor;
+        const strokeWidth = renderer.properties.strokeWidth || 1;
+
+        for (let i = 0; i < state.length; i += 2) {
+            const x = state[i];
+            const y = state[i + 1];
+            if (typeof x !== 'number' || typeof y !== 'number') {
+                continue;
+            }
+
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            this.ctx.fillStyle = fill;
+            this.ctx.fill();
+
+            if (stroke) {
+                this.ctx.strokeStyle = stroke;
+                this.ctx.lineWidth = strokeWidth;
+                this.ctx.stroke();
+            }
+        }
     }
 }
 
