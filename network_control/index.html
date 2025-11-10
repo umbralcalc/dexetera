@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dexetera... network_control</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>network_control</h1>
+        <p class="description">Control junction phases to maximise traffic throughput.</p>
+        
+        <div class="game-area">
+            <div class="game-container">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+            </div>
+            
+            <div class="status" id="status">Waiting for Python server to connect...</div>
+        </div>
+        
+        <div class="info">
+            <h3>🔧 Game Configuration</h3>
+            <div class="config-info">
+                <p><strong>Server States:</strong> edge_states vehicle_rectangles flow_metrics junction_a_control junction_b_control </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <h2>Loading Game...</h2>
+            <p>Please wait while the WebAssembly module loads.</p>
+        </div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script src="google-protobuf.js"></script>
+    <script src="partition_state_pb.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

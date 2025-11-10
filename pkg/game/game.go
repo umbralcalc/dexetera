@@ -218,6 +218,38 @@ func (vb *VisualizationBuilder) AddRectangle(partitionName string, x, y, width, 
 	return vb
 }
 
+// AddRectangleSet adds a renderer that draws multiple rectangles whose center (x, y)
+// positions and sizes are provided by the partition values in groups of four:
+// [x, y, width, height] for each rectangle.
+func (vb *VisualizationBuilder) AddRectangleSet(partitionName string, width, height int, options *ShapeOptions) *VisualizationBuilder {
+	props := map[string]interface{}{
+		"defaultWidth":  width,
+		"defaultHeight": height,
+	}
+
+	if options != nil {
+		if options.Color != "" {
+			props["color"] = options.Color
+		}
+		if options.FillColor != "" {
+			props["fillColor"] = options.FillColor
+		}
+		if options.StrokeColor != "" {
+			props["strokeColor"] = options.StrokeColor
+		}
+		if options.StrokeWidth != 0 {
+			props["strokeWidth"] = options.StrokeWidth
+		}
+	}
+
+	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
+		Type:          "rectangleSet",
+		PartitionName: partitionName,
+		Properties:    props,
+	})
+	return vb
+}
+
 // AddLine adds a line renderer
 func (vb *VisualizationBuilder) AddLine(partitionName string, x1, y1, x2, y2 int, options *LineOptions) *VisualizationBuilder {
 	props := map[string]interface{}{
@@ -806,6 +838,9 @@ class GenericRenderer {
             case 'rectangle':
                 this.renderRectangle(renderer, state);
                 break;
+            case 'rectangleSet':
+                this.renderRectangleSet(renderer, state);
+                break;
             case 'line':
                 this.renderLine(renderer, state);
                 break;
@@ -887,6 +922,39 @@ class GenericRenderer {
         if (!renderer.properties.fillColor && !renderer.properties.strokeColor) {
             this.ctx.fillStyle = renderer.properties.color || '#ffffff';
             this.ctx.fillRect(x, y, width, height);
+        }
+    }
+    
+    renderRectangleSet(renderer, state) {
+        const defaultWidth = renderer.properties.defaultWidth || 12;
+        const defaultHeight = renderer.properties.defaultHeight || 8;
+        const fill = renderer.properties.fillColor || renderer.properties.color || '#ffffff';
+        const stroke = renderer.properties.strokeColor;
+        const strokeWidth = renderer.properties.strokeWidth || 1;
+
+        for (let i = 0; i + 3 < state.length; i += 4) {
+            const x = state[i];
+            const y = state[i + 1];
+            const width = state[i + 2] || defaultWidth;
+            const height = state[i + 3] || defaultHeight;
+
+            if (!width || !height) {
+                continue;
+            }
+
+            const drawWidth = Math.abs(width);
+            const drawHeight = Math.abs(height);
+            const left = x - drawWidth / 2;
+            const top = y - drawHeight / 2;
+
+            this.ctx.fillStyle = fill;
+            this.ctx.fillRect(left, top, drawWidth, drawHeight);
+
+            if (stroke) {
+                this.ctx.strokeStyle = stroke;
+                this.ctx.lineWidth = strokeWidth;
+                this.ctx.strokeRect(left, top, drawWidth, drawHeight);
+            }
         }
     }
     
