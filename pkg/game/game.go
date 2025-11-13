@@ -935,10 +935,16 @@ class GenericRenderer {
         for (let i = 0; i + 3 < state.length; i += 4) {
             const x = state[i];
             const y = state[i + 1];
-            const width = state[i + 2] || defaultWidth;
-            const height = state[i + 3] || defaultHeight;
+            const rawWidth = state[i + 2];
+            const rawHeight = state[i + 3];
+            const width = Number.isFinite(rawWidth) ? rawWidth : defaultWidth;
+            const height = Number.isFinite(rawHeight) ? rawHeight : defaultHeight;
 
-            if (!width || !height) {
+            if (!width || !height || width <= 0 || height <= 0) {
+                continue;
+            }
+
+            if (!Number.isFinite(x) || !Number.isFinite(y)) {
                 continue;
             }
 
