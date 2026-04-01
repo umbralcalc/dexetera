@@ -12,6 +12,7 @@ func FullDryRun(cfg *GameConfig, actionStateValues []float64) error {
 
 	settings, implementations := gen.GenerateConfigs()
 	implementations.OutputCondition = &simulator.NilOutputCondition{}
+	implementations.OutputFunction = &simulator.NilOutputFunction{}
 
 	// Resolve websocket partition indices by name
 	for _, name := range cfg.ActionStatePartitionNames {

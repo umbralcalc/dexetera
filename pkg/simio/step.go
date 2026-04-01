@@ -17,6 +17,8 @@ type JsCallbackOutputFunction struct {
 	callback *js.Value
 }
 
+func (j *JsCallbackOutputFunction) Configure(*simulator.Settings) {}
+
 func (j *JsCallbackOutputFunction) Output(
 	partitionName string,
 	state []float64,
@@ -47,7 +49,7 @@ func (j *JsCallbackOutputFunction) Output(
 // OnlyNamesCondition filters outputs to only the given partition names.
 type OnlyNamesCondition struct{ allow map[string]struct{} }
 
-func (o *OnlyNamesCondition) IsOutputStep(partitionName string, state []float64, cumulativeTimesteps float64) bool {
+func (o *OnlyNamesCondition) IsOutputStep(partitionName string, state []float64, timestepsHistory *simulator.CumulativeTimestepsHistory) bool {
 	_, ok := o.allow[partitionName]
 	return ok
 }
