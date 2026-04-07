@@ -6,27 +6,25 @@ import (
 	"github.com/umbralcalc/dexetera/pkg/game"
 )
 
-func TestTeamSport(t *testing.T) {
+func TestNetworkControl(t *testing.T) {
 	t.Run(
-		"test that the team sport game runs",
+		"test that the network control game runs",
 		func(t *testing.T) {
-			if err := game.FullDryRun(
-				NewNetworkControlGame().GetConfig(),
-				[]float64{0.0, 0.0},
-			); err != nil {
-				t.Errorf("test harness failed: %v", err)
+			cfg := NewNetworkControlGame().GetConfig()
+			game.FullDryRun(cfg, []float64{0.0, 0.0})
+			if err := game.VerifyIterationHarness(cfg, []float64{0.0, 0.0}); err != nil {
+				t.Errorf("iteration harness: %v", err)
 			}
 		},
 	)
 
 	t.Run(
-		"test that substitutions work",
+		"test that control actions work",
 		func(t *testing.T) {
-			if err := game.FullDryRun(
-				NewNetworkControlGame().GetConfig(),
-				[]float64{1.0, 1.0},
-			); err != nil {
-				t.Errorf("test harness failed: %v", err)
+			cfg := NewNetworkControlGame().GetConfig()
+			game.FullDryRun(cfg, []float64{1.0, 1.0})
+			if err := game.VerifyIterationHarness(cfg, []float64{1.0, 1.0}); err != nil {
+				t.Errorf("iteration harness: %v", err)
 			}
 		},
 	)

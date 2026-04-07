@@ -10,11 +10,10 @@ func TestTeamSport(t *testing.T) {
 	t.Run(
 		"test that the team sport game runs",
 		func(t *testing.T) {
-			if err := game.FullDryRun(
-				NewTeamSportGame().GetConfig(),
-				[]float64{0.0}, // No substitution initially
-			); err != nil {
-				t.Errorf("test harness failed: %v", err)
+			cfg := NewTeamSportGame().GetConfig()
+			game.FullDryRun(cfg, []float64{0.0}) // No substitution initially
+			if err := game.VerifyIterationHarness(cfg, []float64{0.0}); err != nil {
+				t.Errorf("iteration harness: %v", err)
 			}
 		},
 	)
@@ -22,11 +21,10 @@ func TestTeamSport(t *testing.T) {
 	t.Run(
 		"test that substitutions work",
 		func(t *testing.T) {
-			if err := game.FullDryRun(
-				NewTeamSportGame().GetConfig(),
-				[]float64{1.0}, // Make a substitution
-			); err != nil {
-				t.Errorf("test harness failed: %v", err)
+			cfg := NewTeamSportGame().GetConfig()
+			game.FullDryRun(cfg, []float64{1.0}) // Make a substitution
+			if err := game.VerifyIterationHarness(cfg, []float64{1.0}); err != nil {
+				t.Errorf("iteration harness: %v", err)
 			}
 		},
 	)

@@ -4,32 +4,40 @@ import (
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
-// FullDryRun tests the behaviour of the simulation stepper in a full run of the
-// game using the action state values as provided.
-func FullDryRun(cfg *GameConfig, actionStateValues []float64) error {
-	// Use the simulation generator from the game config
-	var gen *simulator.ConfigGenerator = cfg.SimulationGenerator()
-
+// prepareSimulationRun builds settings and implementations from cfg, applies
+// action state values to the named action partitions, and uses nil output
+// wiring suitable for dry runs and harness checks.
+func prepareSimulationRun(
+	cfg *GameConfig,
+	actionStateValues []float64,
+) (*simulator.Settings, *simulator.Implementations) {
+	gen := cfg.SimulationGenerator()
 	settings, implementations := gen.GenerateConfigs()
 	implementations.OutputCondition = &simulator.NilOutputCondition{}
 	implementations.OutputFunction = &simulator.NilOutputFunction{}
 
-	// Resolve websocket partition indices by name
 	for _, name := range cfg.ActionStatePartitionNames {
-		for _, iteration := range settings.Iterations {
-			if iteration.Name == name {
-				iteration.Params.Set("action_state_values", actionStateValues)
+		for i := range settings.Iterations {
+			if settings.Iterations[i].Name == name {
+				settings.Iterations[i].Params.Set("action_state_values", actionStateValues)
 			}
 		}
 	}
+	return settings, implementations
+}
 
-	// Run first normally
-	coordinator := simulator.NewPartitionCoordinator(
-		settings,
-		implementations,
-	)
+// FullDryRun runs a full coordinator pass with the given action state values.
+// Production-style simulation code should use this path (coordinator only),
+// not RunWithHarnesses.
+func FullDryRun(cfg *GameConfig, actionStateValues []float64) {
+	settings, implementations := prepareSimulationRun(cfg, actionStateValues)
+	coordinator := simulator.NewPartitionCoordinator(settings, implementations)
 	coordinator.Run()
+}
 
-	// Then run with test harnesses
+// VerifyIterationHarness runs stochadex iteration harness checks on the same
+// graph as FullDryRun. Intended for *_test.go only.
+func VerifyIterationHarness(cfg *GameConfig, actionStateValues []float64) error {
+	settings, implementations := prepareSimulationRun(cfg, actionStateValues)
 	return simulator.RunWithHarnesses(settings, implementations)
 }
