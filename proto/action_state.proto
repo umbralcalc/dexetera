@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "./pkg/simio";
+
+// ActionState carries per-step action input from any external action source
+// (an in-browser driver, a Python websocket driver, etc.) into a running
+// stochadex simulation.
+message ActionState {
+  // Legacy broadcast vector. When `partitions` is empty, these values are
+  // broadcast to every partition listed in ActionStatePartitionNames and
+  // delivered to each via the `action_state_values` param. Retained so
+  // existing dexact clients keep working unchanged.
+  repeated double values = 1;
+
+  // Per-partition named action values. When non-empty, takes precedence
+  // over `values`: each entry sets `action_state_values` on the partition
+  // whose Name matches the map key. Partitions not present in the map
+  // keep their previous `action_state_values` from the prior step.
+  map<string, ActionValues> partitions = 2;
+}
+
+// ActionValues is the per-partition payload nested under ActionState.partitions.
+// A separate message (rather than `map<string, repeated double>`, which proto3
+// does not allow) so the named-action path can carry full action vectors.
+message ActionValues {
+  // Floats delivered into a single named partition's `action_state_values`
+  // param. Length and semantics are entirely up to that partition's
+  // Iteration implementation.
+  repeated double values = 1;
+}

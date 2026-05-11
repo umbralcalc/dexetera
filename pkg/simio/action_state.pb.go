@@ -21,9 +21,21 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ActionState carries per-step action input from any external action source
+// (an in-browser driver, a Python websocket driver, etc.) into a running
+// stochadex simulation.
 type ActionState struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Values        []float64              `protobuf:"fixed64,1,rep,packed,name=values,proto3" json:"values,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Legacy broadcast vector. When `partitions` is empty, these values are
+	// broadcast to every partition listed in ActionStatePartitionNames and
+	// delivered to each via the `action_state_values` param. Retained so
+	// existing dexact clients keep working unchanged.
+	Values []float64 `protobuf:"fixed64,1,rep,packed,name=values,proto3" json:"values,omitempty"`
+	// Per-partition named action values. When non-empty, takes precedence
+	// over `values`: each entry sets `action_state_values` on the partition
+	// whose Name matches the map key. Partitions not present in the map
+	// keep their previous `action_state_values` from the prior step.
+	Partitions    map[string]*ActionValues `protobuf:"bytes,2,rep,name=partitions,proto3" json:"partitions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -65,12 +77,77 @@ func (x *ActionState) GetValues() []float64 {
 	return nil
 }
 
+func (x *ActionState) GetPartitions() map[string]*ActionValues {
+	if x != nil {
+		return x.Partitions
+	}
+	return nil
+}
+
+// ActionValues is the per-partition payload nested under ActionState.partitions.
+// A separate message (rather than `map<string, repeated double>`, which proto3
+// does not allow) so the named-action path can carry full action vectors.
+type ActionValues struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Floats delivered into a single named partition's `action_state_values`
+	// param. Length and semantics are entirely up to that partition's
+	// Iteration implementation.
+	Values        []float64 `protobuf:"fixed64,1,rep,packed,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActionValues) Reset() {
+	*x = ActionValues{}
+	mi := &file_action_state_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActionValues) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActionValues) ProtoMessage() {}
+
+func (x *ActionValues) ProtoReflect() protoreflect.Message {
+	mi := &file_action_state_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActionValues.ProtoReflect.Descriptor instead.
+func (*ActionValues) Descriptor() ([]byte, []int) {
+	return file_action_state_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ActionValues) GetValues() []float64 {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
 var File_action_state_proto protoreflect.FileDescriptor
 
 const file_action_state_proto_rawDesc = "" +
 	"\n" +
-	"\x12action_state.proto\"%\n" +
+	"\x12action_state.proto\"\xb1\x01\n" +
 	"\vActionState\x12\x16\n" +
+	"\x06values\x18\x01 \x03(\x01R\x06values\x12<\n" +
+	"\n" +
+	"partitions\x18\x02 \x03(\v2\x1c.ActionState.PartitionsEntryR\n" +
+	"partitions\x1aL\n" +
+	"\x0fPartitionsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12#\n" +
+	"\x05value\x18\x02 \x01(\v2\r.ActionValuesR\x05value:\x028\x01\"&\n" +
+	"\fActionValues\x12\x16\n" +
 	"\x06values\x18\x01 \x03(\x01R\x06valuesB\rZ\v./pkg/simiob\x06proto3"
 
 var (
@@ -85,16 +162,20 @@ func file_action_state_proto_rawDescGZIP() []byte {
 	return file_action_state_proto_rawDescData
 }
 
-var file_action_state_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_action_state_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_action_state_proto_goTypes = []any{
-	(*ActionState)(nil), // 0: ActionState
+	(*ActionState)(nil),  // 0: ActionState
+	(*ActionValues)(nil), // 1: ActionValues
+	nil,                  // 2: ActionState.PartitionsEntry
 }
 var file_action_state_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: ActionState.partitions:type_name -> ActionState.PartitionsEntry
+	1, // 1: ActionState.PartitionsEntry.value:type_name -> ActionValues
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_action_state_proto_init() }
@@ -108,7 +189,7 @@ func file_action_state_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_action_state_proto_rawDesc), len(file_action_state_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

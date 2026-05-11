@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dexetera — growth (local preview)</title>
+<style>
+body { margin: 0; padding: 2em 1.5em; max-width: 900px; margin: 0 auto;
+       font-family: system-ui, -apple-system, sans-serif; color: #2c3e50; }
+h1 { font-size: 2.4em; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 0.6em; }
+header p { margin: 0 0 1.4em; opacity: 0.65; font-size: 0.95em; }
+</style>
+</head>
+<body>
+<header>
+<h1>growth</h1>
+<p>Local preview. The embeddable snippet is in widget.html.</p>
+</header>
+<div id="dexetera-growth" class="dexetera-widget">
+<style>
+#dexetera-growth { font-family: system-ui, -apple-system, sans-serif; color: #2c3e50; line-height: 1.5; }
+#dexetera-growth .description { margin: 0 0 1em; color: #2c3e50; opacity: 0.85; font-size: 1rem; }
+#dexetera-growth code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em; background: rgba(60,120,216,0.08); padding: 0.05em 0.3em; border-radius: 3px; }
+#dexetera-growth .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.9em; }
+#dexetera-growth .panel { border: 1px solid #2c3e50; border-radius: 6px; padding: 0.8em 0.9em; background: #ffffff; display: flex; flex-direction: column; gap: 0.6em; box-sizing: border-box; }
+#dexetera-growth .panel-title { font-weight: 600; color: #2c3e50; font-size: 1rem; }
+#dexetera-growth canvas { display: block; width: 100%; max-width: 320px; height: auto; aspect-ratio: 320 / 160; margin: 0 auto; background: #ffffff; }
+#dexetera-growth .panel-readout { margin: 0; font-size: 1rem; color: #2c3e50; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+#dexetera-growth .slider { display: grid; grid-template-columns: 1fr 80px; grid-template-areas: "name readout" "input input"; align-items: center; gap: 0.3em 1em; font-size: 1rem; }
+#dexetera-growth .slider-name { grid-area: name; color: #2c3e50; }
+#dexetera-growth .slider input[type="range"] { grid-area: input; width: 100%; accent-color: #3c78d8; }
+#dexetera-growth .slider-readout { grid-area: readout; text-align: right; color: #3c78d8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+#dexetera-growth .panel-actions { display: flex; flex-wrap: wrap; gap: 0.6em; margin-top: 0.4em; }
+#dexetera-growth button.button-secondary { cursor: pointer; border: 1px solid #2c3e50; background: #ffffff; color: #2c3e50; padding: 0.4em 0.85em; border-radius: 6px; font-size: 1rem; font-family: inherit; }
+#dexetera-growth button.button-secondary:hover { background: #f4f6f9; }
+#dexetera-growth .status { margin: 1em 0 0; text-align: right; font-size: 0.9em; color: #2c3e50; opacity: 0.6; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+<p class="description">Logistic growth: drag the sliders to set r and K live.</p>
+<div class="dashboard">
+    <section class="panel">
+        <div class="panel-title">Simulation</div>
+        <canvas width="320" height="160"></canvas>
+        
+        <p class="panel-readout" data-readout="population">&nbsp;</p>
+        
+    </section>
+    
+    <section class="panel">
+        <div class="panel-title">Live controls</div>
+        
+        <label class="slider">
+            <span class="slider-name">r (growth rate)</span>
+            <input type="range" data-slider="r"
+                   min="0" max="0.2" step="0.005" value="0.05">
+            <span class="slider-readout" data-slider-readout="r">&nbsp;</span>
+        </label>
+        
+        <label class="slider">
+            <span class="slider-name">K (carrying capacity)</span>
+            <input type="range" data-slider="K"
+                   min="0" max="1000" step="10" value="500">
+            <span class="slider-readout" data-slider-readout="K">&nbsp;</span>
+        </label>
+        
+        
+        <div class="panel-actions">
+            <button type="button" class="button-secondary" data-reset>Reset simulation</button>
+        </div>
+        
+    </section>
+    
+</div>
+<p class="status" data-status>Loading…</p>
+</div>
+<script>
+(function () {
+    var widget = document.getElementById('dexetera-growth');
+    var RUNTIME_BASE = '../runtime/';
+    var WASM_URL = './src/main.wasm';
+    var gameConfig = {"visualization":{"backgroundColor":"#ffffff","canvasHeight":160,"canvasWidth":320,"renderers":[{"partitionName":"","properties":{"color":"#2c3e50","width":1,"x1":18,"x2":302,"y1":142,"y2":142},"type":"line"},{"partitionName":"population","properties":{"color":"#3c78d8","height":124,"lineWidth":2,"width":284,"x":18,"y":18},"type":"lineChart"}],"updateIntervalMs":0},"sliders":[{"name":"r","partition":"population","valueIndex":0,"default":0.05,"decimals":3},{"name":"K","partition":"population","valueIndex":1,"default":500,"decimals":3}],"readouts":[{"partition":"population","template":"t = {t} · N = {v}","decimals":2}],"showReset":true,"driver":{"kind":"inline","options":{"intervalMs":50}}};
+
+    // Load the renderer script lazily, sharing one promise across every
+    // dexetera widget on the same page.
+    function ensureRenderer() {
+        if (self.dexetera && self.dexetera.createRenderer) return Promise.resolve();
+        if (self.__dexeteraLoading) return self.__dexeteraLoading;
+        self.__dexeteraLoading = new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = RUNTIME_BASE + 'renderer.js';
+            s.onload = function () { resolve(); };
+            s.onerror = function () { reject(new Error('failed to load ' + s.src)); };
+            document.head.appendChild(s);
+        });
+        return self.__dexeteraLoading;
+    }
+
+    function $(sel) { return widget.querySelector(sel); }
+    function $$(sel) { return widget.querySelectorAll(sel); }
+
+    function setStatus(msg) {
+        var el = $('[data-status]');
+        if (el) el.textContent = msg;
+    }
+
+    var slidersByPartition = (function () {
+        var grouped = {};
+        for (var i = 0; i < gameConfig.sliders.length; i++) {
+            var s = gameConfig.sliders[i];
+            if (!grouped[s.partition]) grouped[s.partition] = [];
+            grouped[s.partition].push(s);
+        }
+        return grouped;
+    })();
+
+    var worker = null;
+
+    function publishActions() {
+        for (var i = 0; i < gameConfig.sliders.length; i++) {
+            var s = gameConfig.sliders[i];
+            var input = $('[data-slider="' + s.name + '"]');
+            var ro = $('[data-slider-readout="' + s.name + '"]');
+            if (input && ro) ro.textContent = parseFloat(input.value).toFixed(s.decimals);
+        }
+        if (!worker) return;
+        var partitions = {};
+        for (var partition in slidersByPartition) {
+            if (!Object.prototype.hasOwnProperty.call(slidersByPartition, partition)) continue;
+            var group = slidersByPartition[partition];
+            var maxIdx = -1;
+            for (var j = 0; j < group.length; j++) maxIdx = Math.max(maxIdx, group[j].valueIndex);
+            var values = new Array(maxIdx + 1);
+            for (var k = 0; k <= maxIdx; k++) values[k] = 0;
+            for (var l = 0; l < group.length; l++) {
+                var sl = group[l];
+                var inp = $('[data-slider="' + sl.name + '"]');
+                values[sl.valueIndex] = parseFloat(inp ? inp.value : sl.default);
+            }
+            partitions[partition] = values;
+        }
+        worker.postMessage({ action: 'setActions', partitions: partitions });
+    }
+
+    function applyReadout(template, decimals, partitionState) {
+        var s = template;
+        s = s.replace(/\{t\}/g, Math.floor(partitionState.timesteps));
+        s = s.replace(/\{v(\d*)\}/g, function (_, idx) {
+            var i = idx === '' ? 0 : parseInt(idx, 10);
+            var v = partitionState.state.values[i];
+            return (v === undefined) ? '' : v.toFixed(decimals);
+        });
+        return s;
+    }
+
+    function startWorker(renderer) {
+        if (worker) worker.terminate();
+        worker = new Worker(RUNTIME_BASE + 'worker.js');
+        worker.onmessage = function (e) {
+            var msg = e.data;
+            if (msg.type === 'partitionState') {
+                renderer.update(msg.data);
+                renderer.render();
+                for (var i = 0; i < gameConfig.readouts.length; i++) {
+                    var r = gameConfig.readouts[i];
+                    if (r.partition !== msg.data.partitionName) continue;
+                    var el = $('[data-readout="' + r.partition + '"]');
+                    if (el) el.textContent = applyReadout(r.template, r.decimals, msg.data);
+                }
+            } else if (msg.type === 'status') {
+                setStatus(msg.data);
+            } else if (msg.type === 'error') {
+                console.error('dexetera worker error:', msg.data);
+                setStatus('Error: ' + msg.data);
+            }
+        };
+        worker.onerror = function (err) {
+            console.error('dexetera worker error:', err);
+            setStatus('Worker error: ' + err.message);
+        };
+        worker.postMessage({
+            action: 'start',
+            wasmBinary: new URL(WASM_URL, document.baseURI).href,
+            driver: gameConfig.driver,
+        });
+        publishActions();
+    }
+
+    ensureRenderer().then(function () {
+        var canvas = $('canvas');
+        var renderer = self.dexetera.createRenderer(canvas, gameConfig.visualization);
+
+        for (var i = 0; i < gameConfig.sliders.length; i++) {
+            var s = gameConfig.sliders[i];
+            var el = $('[data-slider="' + s.name + '"]');
+            if (el) el.addEventListener('input', publishActions);
+        }
+        if (gameConfig.showReset) {
+            var btn = $('[data-reset]');
+            if (btn) btn.addEventListener('click', function () { startWorker(renderer); });
+        }
+        publishActions();
+        startWorker(renderer);
+    }).catch(function (err) {
+        console.error(err);
+        setStatus('Failed to load dexetera runtime: ' + err.message);
+    });
+})();
+</script>
+
+</body>
+</html>
