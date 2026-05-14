@@ -134,6 +134,7 @@ class GenericRenderer {
         const fill = renderer.properties.fillColor || renderer.properties.color || '#ffffff';
         const stroke = renderer.properties.strokeColor;
         const strokeWidth = renderer.properties.strokeWidth || 1;
+        const topLeftAnchor = renderer.properties.anchor === 'topLeft';
 
         for (let i = 0; i + 3 < state.length; i += 4) {
             const x = state[i];
@@ -147,8 +148,8 @@ class GenericRenderer {
 
             const drawWidth = Math.abs(width);
             const drawHeight = Math.abs(height);
-            const left = x - drawWidth / 2;
-            const top = y - drawHeight / 2;
+            const left = topLeftAnchor ? x : x - drawWidth / 2;
+            const top = topLeftAnchor ? y : y - drawHeight / 2;
 
             this.ctx.fillStyle = fill;
             this.ctx.fillRect(left, top, drawWidth, drawHeight);

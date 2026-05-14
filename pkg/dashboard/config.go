@@ -309,7 +309,9 @@ func (vb *VisualizationBuilder) AddRectangle(partitionName string, x, y, width, 
 // AddRectangleSet appends a renderer that draws one rectangle for every
 // (x, y, width, height) group of four floats found in the bound partition's
 // state. Entries whose width or height is zero are skipped, so simulations
-// can compact entire slots by emitting all-zeros.
+// can compact entire slots by emitting all-zeros. By default (x, y) is the
+// rectangle's centre; set options.Anchor = "topLeft" to use the top-left
+// instead.
 func (vb *VisualizationBuilder) AddRectangleSet(partitionName string, width, height int, options *ShapeOptions) *VisualizationBuilder {
 	props := map[string]interface{}{
 		"defaultWidth":  width,
@@ -327,6 +329,9 @@ func (vb *VisualizationBuilder) AddRectangleSet(partitionName string, width, hei
 		}
 		if options.StrokeWidth != 0 {
 			props["strokeWidth"] = options.StrokeWidth
+		}
+		if options.Anchor != "" {
+			props["anchor"] = options.Anchor
 		}
 	}
 	vb.config.Renderers = append(vb.config.Renderers, RendererConfig{
@@ -562,6 +567,10 @@ type ShapeOptions struct {
 	FillColor   string
 	StrokeColor string
 	StrokeWidth int
+	// Anchor controls how (x, y) in a rectangleSet's state is interpreted.
+	// "topLeft" matches Canvas/AddRectangle convention; the default ("" or
+	// "center") keeps (x, y) as the rectangle's centre.
+	Anchor string
 }
 
 type LineOptions struct {
