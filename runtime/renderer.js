@@ -67,11 +67,21 @@ class GenericRenderer {
     }
 
     renderText(renderer, state) {
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = '16px Arial';
-        this.ctx.textAlign = 'center';
+        // Honor caller-supplied color/font/alignment from the
+        // properties object. Defaults match the previous hardcoded
+        // behaviour (white, 16px Arial, centered) so existing widgets
+        // render unchanged unless they set their own values via the
+        // TextOptions emitted by pkg/dashboard's AddText helper.
+        const fontSize = renderer.properties.fontSize || 16;
+        const fontFamily = renderer.properties.fontFamily || 'Arial';
+        this.ctx.fillStyle = renderer.properties.color || '#ffffff';
+        this.ctx.font = `${fontSize}px ${fontFamily}`;
+        this.ctx.textAlign = renderer.properties.textAlign || 'center';
         let text = renderer.properties.text || '{value}';
-        text = text.replace('{value}', Math.floor(state[0] || 0));
+        // Guard against undefined/empty state for renderers bound to
+        // an empty partitionName (static labels).
+        const v = (state && state.length > 0) ? state[0] : 0;
+        text = text.replace('{value}', Math.floor(v || 0));
         this.ctx.fillText(text,
             renderer.properties.x || this.canvas.width / 2,
             renderer.properties.y || this.canvas.height / 2);
