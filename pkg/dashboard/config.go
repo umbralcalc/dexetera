@@ -15,6 +15,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"github.com/umbralcalc/stochadex/pkg/simulator"
 )
 
@@ -739,4 +740,35 @@ func (gb *ConfigBuilder) Build() *Config {
 		}
 	}
 	return gb.config
+}
+
+// CheckActionWidths reports an error when a page's sliders would send an
+// action partition a vector of a different width than the partition
+// declares in its action_state_values: actions are written in place, so
+// the widths must agree. settings is the simulation's generated settings.
+func CheckActionWidths(cfg *Config, settings *simulator.Settings) error {
+	sent := map[string]int{}
+	for _, slider := range cfg.Sliders {
+		if slider.ValueIndex+1 > sent[slider.Partition] {
+			sent[slider.Partition] = slider.ValueIndex + 1
+		}
+	}
+	for _, name := range cfg.ActionStatePartitionNames {
+		width, ok := sent[name]
+		if !ok {
+			continue
+		}
+		for _, iteration := range settings.Iterations {
+			if iteration.Name != name {
+				continue
+			}
+			declared := len(iteration.Params.Map["action_state_values"])
+			if declared != width {
+				return fmt.Errorf("dashboard: action partition %q declares %d "+
+					"action_state_values but its sliders send %d (indices 0..%d); "+
+					"declare one value per slider index", name, declared, width, width-1)
+			}
+		}
+	}
+	return nil
 }
