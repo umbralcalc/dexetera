@@ -161,19 +161,21 @@ Adding a third driver (e.g. one that replays actions from a recorded log) is a s
 
 ## Action delivery: per-partition named vs. broadcast
 
-Per-step action input flows through an `ActionState` protobuf message ([proto/action_state.proto](proto/action_state.proto)) with two delivery paths:
+Per-step action input flows through an `ActionState` protobuf message with two delivery paths. The message is stochadex's own (`simulator.ActionState`, defined in stochadex's `cmd/messages/action_state.proto`), so dexetera and stochadex's two-way serving share one wire format:
 
 - **Per-partition named** (`partitions` map): each entry writes to the partition whose name matches the map key. The path the inline driver uses, and the path most dashboards want.
 - **Broadcast** (`values` slice): the same slice is delivered to every partition listed in `ActionStatePartitionNames`. Retained as a wire-compatibility shim for existing dexact Python clients.
 
-The named path takes precedence when both are present. See [pkg/simio/dispatch.go](pkg/simio/dispatch.go) for the full semantics.
+The named path takes precedence when both are present. Actions are written between steps through stochadex's `ParamsInjector`, so each action partition must declare `action_state_values` at the width its actions have: `RegisterStep` checks every partition, and that its sliders send that width, when the page starts, and fails with a message naming the partition otherwise. An action of the wrong width that arrives later (from an external source) is reported on the console and dropped. See [pkg/simio/dispatch.go](pkg/simio/dispatch.go) for the full semantics.
+
+Simulations are stepped with stochadex's inline execution unless their simulation config chooses another strategy: WebAssembly has one thread, so the default strategy's per-step goroutines are pure overhead (12-15x slower per step, measured under Node).
 
 ## Repo layout
 
 ```
 pkg/dashboard/        Config, ConfigBuilder, VisualizationBuilder,
                       WidgetOptions, GenerateWidget — the public Go API
-pkg/simio/            Wasm-side runtime: RegisterStep + ApplyActionState
+pkg/simio/            Wasm-side runtime: RegisterStep + ActionDispatcher
 pkg/growth/           The end-to-end smoke-test simulation
 cmd/growth/
     register_step/    Wasm main for growth (template for your projects)
@@ -181,7 +183,7 @@ cmd/growth/
 runtime/              JS runtime — sync this folder into your blog's
                       static assets, once. Contains renderer.js,
                       worker.js, the proto stubs, drivers/.
-proto/                action_state.proto + regen script
+proto/                regen script for the ActionState JS stub
 growth/               growth's generated widget + local-preview wrapper
                       (safe to delete; regenerate via `go run ./cmd/growth/generate`)
 ```
@@ -192,4 +194,4 @@ growth/               growth's generated widget + local-preview wrapper
 ./proto/generate_proto.sh
 ```
 
-Writes Go output to `pkg/simio/action_state.pb.go` and JS output to `runtime/action_state_pb.js`. Requires `protoc` and `protoc-gen-go` on `$PATH`.
+Writes `runtime/action_state_pb.js` from the `action_state.proto` of the stochadex version in `go.mod`, so the JS always matches the Go the wasm module is built with. Requires `protoc` and `protoc-gen-js` on `$PATH`. The Go bindings are stochadex's.

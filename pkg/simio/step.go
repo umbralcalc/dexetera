@@ -13,7 +13,6 @@
 package simio
 
 import (
-	"sync"
 	"syscall/js"
 
 	"github.com/umbralcalc/dexetera/pkg/dashboard"
@@ -90,51 +89,63 @@ func NewOnlyNamesCondition(names []string) *OnlyNamesCondition {
 //	         this step. Re-set every step so the caller can swap it.
 //	args[1]  either null (no new action input) or a Uint8Array of bytes
 //	         encoding an ActionState protobuf. When present, the bytes are
-//	         decoded and routed through ApplyActionState, which updates
-//	         the relevant partitions' `action_state_values` params before
-//	         the step runs.
+//	         decoded and applied through dispatcher, which updates the
+//	         relevant partitions' `action_state_values` params before the
+//	         step runs. Actions that cannot be decoded or applied are
+//	         reported on the console and dropped; the step still runs.
 //
-// The closure then advances the coordinator by one step and returns nil.
+// The closure then advances the simulation by one step and returns nil.
 func GenerateStepClosure(
-	wg *sync.WaitGroup,
 	callback *js.Value,
-	coordinator *simulator.PartitionCoordinator,
-	actionPartitionIndices []int,
-	actionPartitionIndexByName map[string]int,
+	stepper simulator.Stepper,
+	dispatcher *ActionDispatcher,
 ) func(this js.Value, args []js.Value) interface{} {
+	console := js.Global().Get("console")
+	var actionState ActionState
 	return func(this js.Value, args []js.Value) interface{} {
 		*callback = args[0]
 		if !args[1].IsNull() {
-			var actionState ActionState
 			stateBytes := make([]byte, args[1].Get("length").Int())
 			js.CopyBytesToGo(stateBytes, args[1])
 			if err := proto.Unmarshal(stateBytes, &actionState); err != nil {
-				panic(err)
+				console.Call("error", "dexetera: decoding an action: "+err.Error())
+			} else if err := dispatcher.Apply(&actionState); err != nil {
+				console.Call("error", "dexetera: applying an action: "+err.Error())
 			}
-			ApplyActionState(
-				coordinator,
-				actionPartitionIndices,
-				actionPartitionIndexByName,
-				&actionState,
-			)
 		}
-		coordinator.Step(wg)
+		stepper.Step()
 		return nil
 	}
 }
 
 // RegisterStep is the wasm `main` for an example: it builds the stochadex
-// coordinator from cfg, wires the JS output callback in, and registers a
+// simulation from cfg, wires the JS output callback in, and registers a
 // `stepSimulation` global on `js.Global()`. It then blocks forever
 // (`select {}`) so the Go runtime stays alive to service further calls.
 //
-// The two index structures it builds — actionPartitionIndices (slice,
-// declaration order) and actionPartitionIndexByName (map) — exist so that
-// ApplyActionState can serve both action-delivery paths efficiently:
-//   - Broadcast (legacy ActionState.Values): iterate the slice.
-//   - Per-partition named (ActionState.Partitions): look up by name.
+// Unless the simulation chooses an execution strategy, it is stepped with
+// stochadex's inline execution: in WebAssembly there is one thread, so the
+// default strategy's per-step goroutines are pure overhead (12-15x slower
+// per step, measured under Node). A misconfigured page — an action
+// partition that does not exist or declare action_state_values, or sliders
+// that send a different width than it declares — fails here, at startup.
 func RegisterStep(cfg *dashboard.Config) {
+	step, err := NewStepFunc(cfg)
+	if err != nil {
+		panic(err)
+	}
+	js.Global().Set("stepSimulation", js.FuncOf(step))
+	select {}
+}
+
+// NewStepFunc builds the `stepSimulation` function RegisterStep registers:
+// the simulation from cfg, stepped as RegisterStep describes, with actions
+// applied through an ActionDispatcher. A misconfigured page is an error.
+func NewStepFunc(cfg *dashboard.Config) (func(this js.Value, args []js.Value) interface{}, error) {
 	settings, implementations := cfg.SimulationGenerator().GenerateConfigs()
+	if err := dashboard.CheckActionWidths(cfg, settings); err != nil {
+		return nil, err
+	}
 
 	// Restrict output to the partitions the Config declares as "server"
 	// partitions, so neither the renderer nor any external action source
@@ -142,31 +153,19 @@ func RegisterStep(cfg *dashboard.Config) {
 	if len(cfg.ServerPartitionNames) > 0 {
 		implementations.OutputCondition = NewOnlyNamesCondition(cfg.ServerPartitionNames)
 	}
-
-	actionPartitionIndices := make([]int, 0, len(cfg.ActionStatePartitionNames))
-	actionPartitionIndexByName := make(map[string]int, len(cfg.ActionStatePartitionNames))
-	for _, name := range cfg.ActionStatePartitionNames {
-		for index, iteration := range settings.Iterations {
-			if iteration.Name == name {
-				actionPartitionIndices = append(actionPartitionIndices, index)
-				actionPartitionIndexByName[name] = index
-			}
-		}
+	if implementations.ExecutionStrategy == nil {
+		implementations.ExecutionStrategy = &simulator.InlineExecution{}
 	}
 
-	var wg sync.WaitGroup
 	var callback js.Value
 	implementations.OutputFunction = &JsCallbackOutputFunction{callback: &callback}
 
 	coordinator := simulator.NewPartitionCoordinator(settings, implementations)
-	step := GenerateStepClosure(
-		&wg,
-		&callback,
-		coordinator,
-		actionPartitionIndices,
-		actionPartitionIndexByName,
-	)
-
-	js.Global().Set("stepSimulation", js.FuncOf(step))
-	select {}
+	dispatcher, err := NewActionDispatcher(coordinator, cfg.ActionStatePartitionNames)
+	if err != nil {
+		return nil, err
+	}
+	// The page runs until it is closed, so the stepper is never closed: the
+	// JS callback output holds nothing to finalize.
+	return GenerateStepClosure(&callback, coordinator.NewStepper(), dispatcher), nil
 }
