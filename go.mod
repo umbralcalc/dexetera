@@ -3,7 +3,7 @@ module github.com/umbralcalc/dexetera
 go 1.24.4
 
 require (
-	github.com/umbralcalc/stochadex v0.20.0
+	github.com/umbralcalc/stochadex v0.25.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/protobuf v1.36.11
 )
